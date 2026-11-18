@@ -2,6 +2,20 @@ import { requisicaoApi } from './api.js';
 
 export const authService = {
   /**
+   * Realiza o cadastro de um novo usuário na plataforma Sonessia.
+   * Endpoint: POST /autenticacao/cadastro
+   *
+   * @param {{ nome: string, email: string, senha: string, dataNascimento: string }} dados
+   * @returns {Promise<{ mensagem: string, usuario: { id: string, nome: string, email: string, perfil: 'COMUM', emailVerificado: boolean, dataNascimento: string, fotoPerfil: null } }>}
+   */
+  async cadastrar(dados) {
+    return requisicaoApi('/autenticacao/cadastro', {
+      method: 'POST',
+      body: JSON.stringify(dados),
+    });
+  },
+
+  /**
    * Realiza login no backend da Sonessia.
    * Endpoint: POST /autenticacao/login
    *
@@ -88,6 +102,40 @@ export const authService = {
     return requisicaoApi('/autenticacao/redefinir-senha', {
       method: 'POST',
       body: JSON.stringify({ token, novaSenha }),
+    });
+  },
+
+  /**
+   * Confirma o endereço de e-mail do usuário utilizando o código de 6 dígitos.
+   * Endpoint: POST /autenticacao/verificar-email
+   *
+   * @param {string} email - E-mail cadastrado do usuário.
+   * @param {string} codigo - Código numérico de 6 dígitos recebido por e-mail.
+   * @returns {Promise<{ mensagem: string }>}
+   */
+  async verificarEmail(email, codigo) {
+    return requisicaoApi('/autenticacao/verificar-email', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: email ? email.trim().toLowerCase() : '',
+        codigo: codigo ? codigo.trim() : '',
+      }),
+    });
+  },
+
+  /**
+   * Solicita o reenvio do código de 6 dígitos para o e-mail informado.
+   * Endpoint: POST /autenticacao/reenviar-codigo
+   *
+   * @param {string} email - E-mail cadastrado do usuário.
+   * @returns {Promise<{ mensagem: string }>}
+   */
+  async reenviarCodigo(email) {
+    return requisicaoApi('/autenticacao/reenviar-codigo', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: email ? email.trim().toLowerCase() : '',
+      }),
     });
   },
 };

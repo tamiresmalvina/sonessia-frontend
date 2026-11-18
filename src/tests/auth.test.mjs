@@ -447,3 +447,363 @@ test('Lógica de persistência da sessão ("Lembrar-me")', () => {
   assert.equal(localStorageMock.has('sonessia_token'), false);
   assert.equal(localStorageMock.has('sonessia_lembrar_me'), false);
 });
+
+test('authService.cadastrar envia payload completo com dados esperados pelo backend', async () => {
+  let urlChamada = '';
+  let opcoesChamadas = {};
+
+  const mockFetch = async (url, opcoes) => {
+    urlChamada = url;
+    opcoesChamadas = opcoes;
+    return {
+      ok: true,
+      status: 201,
+      headers: {
+        get: (h) => (h.toLowerCase() === 'content-type' ? 'application/json' : null),
+      },
+      json: async () => ({
+        mensagem:
+          'Cadastro realizado com sucesso. Um código de verificação foi encaminhado para o seu e-mail.',
+        usuario: {
+          id: 'user-novo-uuid',
+          nome: 'Novo Usuário',
+          email: 'novo@sonessia.com',
+          perfil: 'COMUM',
+          emailVerificado: false,
+          dataNascimento: '2000-05-15T00:00:00.000Z',
+          fotoPerfil: null,
+        },
+      }),
+    };
+  };
+
+  globalThis.fetch = mockFetch;
+  const { authService } = await import('../services/auth.service.js');
+
+  const payload = {
+    nome: 'Novo Usuário',
+    email: 'novo@sonessia.com',
+    senha: 'SenhaForte@123',
+    dataNascimento: '2000-05-15',
+  };
+
+  const resultado = await authService.cadastrar(payload);
+
+  assert.equal(urlChamada, 'http://localhost:3000/autenticacao/cadastro');
+  assert.equal(opcoesChamadas.method, 'POST');
+  assert.equal(opcoesChamadas.credentials, 'include');
+  assert.equal(opcoesChamadas.headers['Content-Type'], 'application/json');
+  assert.equal(opcoesChamadas.body, JSON.stringify(payload));
+  assert.equal(resultado.usuario.perfil, 'COMUM');
+  assert.equal(resultado.usuario.emailVerificado, false);
+  assert.match(resultado.mensagem, /código de verificação foi encaminhado/);
+});
+
+test('authService.cadastrar trata conflito de e-mail existente (409 CONFLITO_CADASTRO)', async () => {
+  const mockFetch = async () => ({
+    ok: false,
+    status: 409,
+    headers: {
+      get: (h) => (h.toLowerCase() === 'content-type' ? 'application/json' : null),
+    },
+    json: async () => ({
+      erro: {
+        codigo: 'CONFLITO_CADASTRO',
+        mensagem: 'Já existe uma conta cadastrada com o e-mail informado.',
+        detalhes: [],
+      },
+    }),
+  });
+
+  globalThis.fetch = mockFetch;
+  const { authService } = await import('../services/auth.service.js');
+
+  await assert.rejects(
+    async () => {
+      await authService.cadastrar({
+        nome: 'Usuario Repetido',
+        email: 'repetido@sonessia.com',
+        senha: 'SenhaForte@123',
+        dataNascimento: '2000-01-01',
+      });
+    },
+    (erro) => {
+      assert.equal(erro.status, 409);
+      assert.equal(erro.codigo, 'CONFLITO_CADASTRO');
+      assert.equal(erro.message, 'Já existe uma conta cadastrada com o e-mail informado.');
+      return true;
+    }
+  );
+});
+
+test('authService.cadastrar trata erro de idade insuficiente (400 DADOS_INVALIDOS)', async () => {
+  const mockFetch = async () => ({
+    ok: false,
+    status: 400,
+    headers: {
+      get: (h) => (h.toLowerCase() === 'content-type' ? 'application/json' : null),
+    },
+    json: async () => ({
+      erro: {
+        codigo: 'DADOS_INVALIDOS',
+        mensagem: 'É necessário ter completado 16 anos para se cadastrar.',
+        detalhes: [
+          {
+            campo: 'dataNascimento',
+            mensagem: 'É necessário ter completado 16 anos para se cadastrar.',
+          },
+        ],
+      },
+    }),
+  });
+
+  globalThis.fetch = mockFetch;
+  const { authService } = await import('../services/auth.service.js');
+
+  await assert.rejects(
+    async () => {
+      await authService.cadastrar({
+        nome: 'Menor de Idade',
+        email: 'menor@sonessia.com',
+        senha: 'SenhaForte@123',
+        dataNascimento: '2020-01-01',
+      });
+    },
+    (erro) => {
+      assert.equal(erro.status, 400);
+      assert.equal(erro.codigo, 'DADOS_INVALIDOS');
+      assert.match(erro.message, /16 anos/);
+      return true;
+    }
+  );
+});
+
+test('validarIdade aceita data que completa 16 anos exatamente hoje', async () => {
+  const { validarIdade } = await import('../utils/validacoes.js');
+
+  const hoje = new Date(Date.UTC(2026, 10, 18)); // 2026-11-18
+  const dataExata = '2010-11-18'; // Exatamente 16 anos hoje
+
+  const resultado = validarIdade(dataExata, hoje);
+  assert.equal(resultado.valido, true);
+  assert.equal(resultado.erro, '');
+});
+
+test('validarIdade rejeita quando completa 16 anos amanhã (1 dia antes)', async () => {
+  const { validarIdade } = await import('../utils/validacoes.js');
+
+  const hoje = new Date(Date.UTC(2026, 10, 18)); // 2026-11-18
+  const dataAmanha = '2010-11-19'; // Completa 16 anos amanhã
+
+  const resultado = validarIdade(dataAmanha, hoje);
+  assert.equal(resultado.valido, false);
+  assert.equal(resultado.erro, 'É necessário ter pelo menos 16 anos para criar uma conta.');
+});
+
+test('validarIdade rejeita idade inferior a 16 anos (ex: 15 anos)', async () => {
+  const { validarIdade } = await import('../utils/validacoes.js');
+
+  const hoje = new Date(Date.UTC(2026, 10, 18));
+  const data15Anos = '2011-11-18';
+
+  const resultado = validarIdade(data15Anos, hoje);
+  assert.equal(resultado.valido, false);
+  assert.equal(resultado.erro, 'É necessário ter pelo menos 16 anos para criar uma conta.');
+});
+
+test('validarIdade rejeita data futura', async () => {
+  const { validarIdade } = await import('../utils/validacoes.js');
+
+  const hoje = new Date(Date.UTC(2026, 10, 18));
+  const dataFutura = '2026-11-19';
+
+  const resultado = validarIdade(dataFutura, hoje);
+  assert.equal(resultado.valido, false);
+  assert.equal(resultado.erro, 'A data de nascimento não pode ser futura.');
+});
+
+test('validarIdade rejeita data anterior a 1900-01-01', async () => {
+  const { validarIdade } = await import('../utils/validacoes.js');
+
+  const hoje = new Date(Date.UTC(2026, 10, 18));
+  const dataAntiga = '1899-12-31';
+
+  const resultado = validarIdade(dataAntiga, hoje);
+  assert.equal(resultado.valido, false);
+  assert.equal(resultado.erro, 'A data de nascimento não pode ser anterior a 1900-01-01.');
+});
+
+test('validarIdade rejeita campo vazio ou formato inválido', async () => {
+  const { validarIdade } = await import('../utils/validacoes.js');
+
+  assert.equal(validarIdade('').valido, false);
+  assert.equal(validarIdade('').erro, 'Informe sua data de nascimento.');
+
+  assert.equal(validarIdade('data-invalida').valido, false);
+  assert.equal(
+    validarIdade('data-invalida').erro,
+    'A data de nascimento deve ser uma data válida no formato AAAA-MM-DD.'
+  );
+
+  assert.equal(validarIdade('2024-02-31').valido, false);
+  assert.equal(validarIdade('2024-02-31').erro, 'Data de nascimento inválida.');
+});
+
+test('authService.verificarEmail envia POST para /autenticacao/verificar-email com payload correto', async () => {
+  let urlChamada = '';
+  let opcoesChamadas = {};
+
+  const mockFetch = async (url, opcoes) => {
+    urlChamada = url;
+    opcoesChamadas = opcoes;
+    return {
+      ok: true,
+      status: 200,
+      headers: {
+        get: (h) => (h.toLowerCase() === 'content-type' ? 'application/json' : null),
+      },
+      json: async () => ({
+        mensagem: 'E-mail verificado com sucesso. Sua conta agora está ativa.',
+      }),
+    };
+  };
+
+  globalThis.fetch = mockFetch;
+  const { authService } = await import('../services/auth.service.js');
+
+  const resposta = await authService.verificarEmail('NOVO@SONESSIA.COM', '123456');
+
+  assert.equal(urlChamada, 'http://localhost:3000/autenticacao/verificar-email');
+  assert.equal(opcoesChamadas.method, 'POST');
+  assert.equal(
+    opcoesChamadas.body,
+    JSON.stringify({ email: 'novo@sonessia.com', codigo: '123456' })
+  );
+  assert.equal(resposta.mensagem, 'E-mail verificado com sucesso. Sua conta agora está ativa.');
+});
+
+test('authService.verificarEmail trata adequadamente código incorreto (400 CODIGO_INCORRETO)', async () => {
+  const mockFetch = async () => ({
+    ok: false,
+    status: 400,
+    headers: {
+      get: (h) => (h.toLowerCase() === 'content-type' ? 'application/json' : null),
+    },
+    json: async () => ({
+      erro: {
+        codigo: 'CODIGO_INCORRETO',
+        mensagem: 'Código de verificação incorreto.',
+      },
+    }),
+  });
+
+  globalThis.fetch = mockFetch;
+  const { authService } = await import('../services/auth.service.js');
+
+  await assert.rejects(
+    async () => {
+      await authService.verificarEmail('novo@sonessia.com', '999999');
+    },
+    (erro) => {
+      assert.equal(erro.status, 400);
+      assert.equal(erro.codigo, 'CODIGO_INCORRETO');
+      assert.equal(erro.message, 'Código de verificação incorreto.');
+      return true;
+    }
+  );
+});
+
+test('authService.verificarEmail trata código expirado (400 CODIGO_EXPIRADO)', async () => {
+  const mockFetch = async () => ({
+    ok: false,
+    status: 400,
+    headers: {
+      get: (h) => (h.toLowerCase() === 'content-type' ? 'application/json' : null),
+    },
+    json: async () => ({
+      erro: {
+        codigo: 'CODIGO_EXPIRADO',
+        mensagem: 'O código de verificação expirou. Solicite um novo código.',
+      },
+    }),
+  });
+
+  globalThis.fetch = mockFetch;
+  const { authService } = await import('../services/auth.service.js');
+
+  await assert.rejects(
+    async () => {
+      await authService.verificarEmail('novo@sonessia.com', '123456');
+    },
+    (erro) => {
+      assert.equal(erro.status, 400);
+      assert.equal(erro.codigo, 'CODIGO_EXPIRADO');
+      assert.match(erro.message, /expirou/);
+      return true;
+    }
+  );
+});
+
+test('authService.reenviarCodigo envia POST para /autenticacao/reenviar-codigo com e-mail normalizado', async () => {
+  let urlChamada = '';
+  let opcoesChamadas = {};
+
+  const mockFetch = async (url, opcoes) => {
+    urlChamada = url;
+    opcoesChamadas = opcoes;
+    return {
+      ok: true,
+      status: 200,
+      headers: {
+        get: (h) => (h.toLowerCase() === 'content-type' ? 'application/json' : null),
+      },
+      json: async () => ({
+        mensagem: 'Se a conta informada existir e ainda não estiver verificada, um novo código foi enviado.',
+      }),
+    };
+  };
+
+  globalThis.fetch = mockFetch;
+  const { authService } = await import('../services/auth.service.js');
+
+  const resposta = await authService.reenviarCodigo('  Usuario@Sonessia.COM ');
+
+  assert.equal(urlChamada, 'http://localhost:3000/autenticacao/reenviar-codigo');
+  assert.equal(opcoesChamadas.method, 'POST');
+  assert.equal(
+    opcoesChamadas.body,
+    JSON.stringify({ email: 'usuario@sonessia.com' })
+  );
+  assert.match(resposta.mensagem, /novo código foi enviado/);
+});
+
+test('authService.reenviarCodigo propaga erro de intervalo de reenvio (429 INTERVALO_REENVIO)', async () => {
+  const mockFetch = async () => ({
+    ok: false,
+    status: 429,
+    headers: {
+      get: (h) => (h.toLowerCase() === 'content-type' ? 'application/json' : null),
+    },
+    json: async () => ({
+      erro: {
+        codigo: 'INTERVALO_REENVIO',
+        mensagem: 'Aguarde 45 segundos antes de solicitar um novo código de verificação.',
+      },
+    }),
+  });
+
+  globalThis.fetch = mockFetch;
+  const { authService } = await import('../services/auth.service.js');
+
+  await assert.rejects(
+    async () => {
+      await authService.reenviarCodigo('usuario@sonessia.com');
+    },
+    (erro) => {
+      assert.equal(erro.status, 429);
+      assert.equal(erro.codigo, 'INTERVALO_REENVIO');
+      assert.match(erro.message, /Aguarde 45 segundos/);
+      return true;
+    }
+  );
+});

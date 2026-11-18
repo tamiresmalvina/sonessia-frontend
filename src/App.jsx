@@ -3,6 +3,8 @@ import { AuthProvider } from './contexts/AuthContext.jsx';
 import { useAuth } from './contexts/useAuth.js';
 import { RotaProtegida } from './components/RotaProtegida.jsx';
 import { Login } from './pages/Login.jsx';
+import { Cadastro } from './pages/Cadastro.jsx';
+import { ConfirmarEmail } from './pages/ConfirmarEmail.jsx';
 import { RecuperarSenha } from './pages/RecuperarSenha.jsx';
 import { RedefinirSenha } from './pages/RedefinirSenha.jsx';
 import { AreaAdmin } from './pages/AreaAdmin.jsx';
@@ -41,6 +43,9 @@ function App() {
         <Routes>
           <Route path="/" element={<RedirecionamentoInicial />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/cadastro" element={<Cadastro />} />
+          <Route path="/confirmar-email" element={<ConfirmarEmail />} />
+          <Route path="/email-confirmado" element={<Navigate to="/confirmar-email" replace />} />
           <Route path="/recuperar-senha" element={<RecuperarSenha />} />
           <Route path="/redefinir-senha" element={<RedefinirSenha />} />
           <Route
