@@ -807,3 +807,78 @@ test('authService.reenviarCodigo propaga erro de intervalo de reenvio (429 INTER
     }
   );
 });
+
+test('audioService.listarAudios faz GET em /audios e retorna a lista de sons', async () => {
+  let urlChamada = '';
+  let opcoesChamadas = {};
+
+  const mockFetch = async (url, opcoes) => {
+    urlChamada = url;
+    opcoesChamadas = opcoes;
+    return {
+      ok: true,
+      status: 200,
+      headers: {
+        get: (h) => (h.toLowerCase() === 'content-type' ? 'application/json' : null),
+      },
+      json: async () => ({
+        audios: [
+          {
+            idAudio: 'audio-1',
+            titulo: 'Ruído branco',
+            categoria: 'RUIDO',
+            arquivo: 'https://cdn.sonessia.com/ruido-branco.mp3',
+          },
+        ],
+      }),
+    };
+  };
+
+  globalThis.fetch = mockFetch;
+  const { audioService } = await import('../services/sons.service.js');
+
+  const resultado = await audioService.listarAudios();
+
+  assert.equal(urlChamada, 'http://localhost:3000/audios');
+  assert.equal(opcoesChamadas.method, 'GET');
+  assert.equal(resultado.audios.length, 1);
+  assert.equal(resultado.audios[0].titulo, 'Ruído branco');
+});
+
+test('ambienteService.criarAmbiente envia POST para /ambientes-sonoros com token Bearer e payload', async () => {
+  let urlChamada = '';
+  let opcoesChamadas = {};
+
+  const mockFetch = async (url, opcoes) => {
+    urlChamada = url;
+    opcoesChamadas = opcoes;
+    return {
+      ok: true,
+      status: 201,
+      headers: {
+        get: (h) => (h.toLowerCase() === 'content-type' ? 'application/json' : null),
+      },
+      json: async () => ({
+        mensagem: 'Ambiente criado com sucesso.',
+        ambienteSonoro: { id: 'amb-1', nome: 'Foco Total' },
+      }),
+    };
+  };
+
+  globalThis.fetch = mockFetch;
+  const { ambienteService } = await import('../services/sons.service.js');
+
+  const dados = {
+    nome: 'Foco Total',
+    finalidade: 'ESTUDO',
+    audios: [{ idAudio: '00000000-0000-4000-8000-000000000001', volume: 80 }],
+  };
+
+  const resposta = await ambienteService.criarAmbiente('token_jwt_teste', dados);
+
+  assert.equal(urlChamada, 'http://localhost:3000/ambientes-sonoros');
+  assert.equal(opcoesChamadas.method, 'POST');
+  assert.equal(opcoesChamadas.headers.Authorization, 'Bearer token_jwt_teste');
+  assert.equal(opcoesChamadas.body, JSON.stringify(dados));
+  assert.equal(resposta.mensagem, 'Ambiente criado com sucesso.');
+});

@@ -1,4 +1,4 @@
-import { requisicaoApi } from './api.js';
+import { requisicaoApi } from "./api.js";
 
 export const authService = {
   /**
@@ -9,8 +9,8 @@ export const authService = {
    * @returns {Promise<{ mensagem: string, usuario: { id: string, nome: string, email: string, perfil: 'COMUM', emailVerificado: boolean, dataNascimento: string, fotoPerfil: null } }>}
    */
   async cadastrar(dados) {
-    return requisicaoApi('/autenticacao/cadastro', {
-      method: 'POST',
+    return requisicaoApi("/autenticacao/cadastro", {
+      method: "POST",
       body: JSON.stringify(dados),
     });
   },
@@ -25,8 +25,8 @@ export const authService = {
    * @returns {Promise<{ mensagem: string, tokenAcesso: string, usuario: { id: string, nome: string, email: string, perfil: 'ADMIN' | 'COMUM' } }>}
    */
   async login(email, senha, lembrarMe = false) {
-    return requisicaoApi('/autenticacao/login', {
-      method: 'POST',
+    return requisicaoApi("/autenticacao/login", {
+      method: "POST",
       body: JSON.stringify({ email, senha, lembrarMe }),
     });
   },
@@ -39,8 +39,8 @@ export const authService = {
    * @returns {Promise<{ usuario: { id: string, nome: string, email: string, perfil: 'ADMIN' | 'COMUM', fotoPerfil: string | null } }>}
    */
   async obterUsuarioAtual(tokenAcesso) {
-    return requisicaoApi('/autenticacao/eu', {
-      method: 'GET',
+    return requisicaoApi("/autenticacao/eu", {
+      method: "GET",
       headers: {
         Authorization: `Bearer ${tokenAcesso}`,
       },
@@ -55,8 +55,8 @@ export const authService = {
    * @returns {Promise<{ mensagem: string, tokenAcesso: string, usuario: { id: string, nome: string, email: string, perfil: 'ADMIN' | 'COMUM' } }>}
    */
   async renovarSessao(lembrarMe = false) {
-    return requisicaoApi('/autenticacao/renovar-sessao', {
-      method: 'POST',
+    return requisicaoApi("/autenticacao/renovar-sessao", {
+      method: "POST",
       body: JSON.stringify({ lembrarMe }),
     });
   },
@@ -69,9 +69,11 @@ export const authService = {
    * @returns {Promise<{ mensagem: string }>}
    */
   async logout(tokenAcesso) {
-    const headers = tokenAcesso ? { Authorization: `Bearer ${tokenAcesso}` } : {};
-    return requisicaoApi('/autenticacao/logout', {
-      method: 'POST',
+    const headers = tokenAcesso
+      ? { Authorization: `Bearer ${tokenAcesso}` }
+      : {};
+    return requisicaoApi("/autenticacao/logout", {
+      method: "POST",
       headers,
     });
   },
@@ -84,8 +86,8 @@ export const authService = {
    * @returns {Promise<{ mensagem: string }>}
    */
   async solicitarRecuperacaoSenha(email) {
-    return requisicaoApi('/autenticacao/recuperar-senha', {
-      method: 'POST',
+    return requisicaoApi("/autenticacao/recuperar-senha", {
+      method: "POST",
       body: JSON.stringify({ email }),
     });
   },
@@ -99,8 +101,8 @@ export const authService = {
    * @returns {Promise<{ mensagem: string }>}
    */
   async redefinirSenha(token, novaSenha) {
-    return requisicaoApi('/autenticacao/redefinir-senha', {
-      method: 'POST',
+    return requisicaoApi("/autenticacao/redefinir-senha", {
+      method: "POST",
       body: JSON.stringify({ token, novaSenha }),
     });
   },
@@ -114,11 +116,11 @@ export const authService = {
    * @returns {Promise<{ mensagem: string }>}
    */
   async verificarEmail(email, codigo) {
-    return requisicaoApi('/autenticacao/verificar-email', {
-      method: 'POST',
+    return requisicaoApi("/autenticacao/verificar-email", {
+      method: "POST",
       body: JSON.stringify({
-        email: email ? email.trim().toLowerCase() : '',
-        codigo: codigo ? codigo.trim() : '',
+        email: email ? email.trim().toLowerCase() : "",
+        codigo: codigo ? codigo.trim() : "",
       }),
     });
   },
@@ -131,10 +133,10 @@ export const authService = {
    * @returns {Promise<{ mensagem: string }>}
    */
   async reenviarCodigo(email) {
-    return requisicaoApi('/autenticacao/reenviar-codigo', {
-      method: 'POST',
+    return requisicaoApi("/autenticacao/reenviar-codigo", {
+      method: "POST",
       body: JSON.stringify({
-        email: email ? email.trim().toLowerCase() : '',
+        email: email ? email.trim().toLowerCase() : "",
       }),
     });
   },

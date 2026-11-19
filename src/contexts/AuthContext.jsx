@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-import { AuthContext } from './AuthContextInstance.js';
-import { authService } from '../services/auth.service.js';
+import { useState, useEffect, useCallback } from "react";
+import { AuthContext } from "./AuthContextInstance.js";
+import { authService } from "../services/auth.service.js";
 
-const CHAVE_STORAGE_TOKEN = 'sonessia_token';
-const CHAVE_STORAGE_USUARIO = 'sonessia_usuario';
-const CHAVE_STORAGE_LEMBRAR_ME = 'sonessia_lembrar_me';
+const CHAVE_STORAGE_TOKEN = "sonessia_token";
+const CHAVE_STORAGE_USUARIO = "sonessia_usuario";
+const CHAVE_STORAGE_LEMBRAR_ME = "sonessia_lembrar_me";
 
 function obterTokenArmazenado() {
   try {
@@ -23,6 +23,7 @@ function obterUsuarioArmazenado() {
     const salvo =
       localStorage.getItem(CHAVE_STORAGE_USUARIO) ||
       sessionStorage.getItem(CHAVE_STORAGE_USUARIO);
+
     return salvo ? JSON.parse(salvo) : null;
   } catch {
     return null;
@@ -31,7 +32,7 @@ function obterUsuarioArmazenado() {
 
 function ehSessaoPersistente() {
   try {
-    return localStorage.getItem(CHAVE_STORAGE_LEMBRAR_ME) === 'true';
+    return localStorage.getItem(CHAVE_STORAGE_LEMBRAR_ME) === "true";
   } catch {
     return false;
   }
@@ -42,18 +43,20 @@ function salvarAutenticacao(token, usuario, lembrarMe) {
     if (lembrarMe) {
       localStorage.setItem(CHAVE_STORAGE_TOKEN, token);
       localStorage.setItem(CHAVE_STORAGE_USUARIO, JSON.stringify(usuario));
-      localStorage.setItem(CHAVE_STORAGE_LEMBRAR_ME, 'true');
+      localStorage.setItem(CHAVE_STORAGE_LEMBRAR_ME, "true");
+
       sessionStorage.removeItem(CHAVE_STORAGE_TOKEN);
       sessionStorage.removeItem(CHAVE_STORAGE_USUARIO);
     } else {
       sessionStorage.setItem(CHAVE_STORAGE_TOKEN, token);
       sessionStorage.setItem(CHAVE_STORAGE_USUARIO, JSON.stringify(usuario));
+
       localStorage.removeItem(CHAVE_STORAGE_TOKEN);
       localStorage.removeItem(CHAVE_STORAGE_USUARIO);
       localStorage.removeItem(CHAVE_STORAGE_LEMBRAR_ME);
     }
   } catch {
-    // Falha silenciosa em caso de restrições de storage no navegador
+    // Falha silenciosa caso o navegador restrinja o armazenamento.
   }
 }
 
@@ -62,10 +65,11 @@ function limparAutenticacao() {
     localStorage.removeItem(CHAVE_STORAGE_TOKEN);
     localStorage.removeItem(CHAVE_STORAGE_USUARIO);
     localStorage.removeItem(CHAVE_STORAGE_LEMBRAR_ME);
+
     sessionStorage.removeItem(CHAVE_STORAGE_TOKEN);
     sessionStorage.removeItem(CHAVE_STORAGE_USUARIO);
   } catch {
-    // Falha silenciosa
+    // Falha silenciosa.
   }
 }
 
@@ -74,7 +78,6 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => obterTokenArmazenado());
   const [carregando, setCarregando] = useState(true);
 
-  // Validação e restauração segura da sessão ao inicializar
   useEffect(() => {
     let ativo = true;
 
@@ -82,34 +85,42 @@ export function AuthProvider({ children }) {
       const tokenAtual = obterTokenArmazenado();
       const persistente = ehSessaoPersistente();
 
-      // 1. Se possuir token de acesso em cache, tenta validar com /autenticacao/eu
       if (tokenAtual) {
         try {
           const dados = await authService.obterUsuarioAtual(tokenAtual);
+
           if (ativo && dados?.usuario) {
             setUsuario(dados.usuario);
             setToken(tokenAtual);
+
             salvarAutenticacao(tokenAtual, dados.usuario, persistente);
+
             setCarregando(false);
             return;
           }
         } catch {
-          // Token expirado ou inválido: prossegue para tentativa de renovação
+          // Token expirado ou inválido: tenta renovar a sessão.
         }
       }
 
-      // 2. Se o token não existir ou tiver expirado, tenta renovar a sessão via cookie HttpOnly
       try {
         const renovacao = await authService.renovarSessao(persistente);
+
         if (ativo && renovacao?.tokenAcesso && renovacao?.usuario) {
-          salvarAutenticacao(renovacao.tokenAcesso, renovacao.usuario, persistente);
+          salvarAutenticacao(
+            renovacao.tokenAcesso,
+            renovacao.usuario,
+            persistente,
+          );
+
           setToken(renovacao.tokenAcesso);
           setUsuario(renovacao.usuario);
+
           setCarregando(false);
           return;
         }
       } catch {
-        // Sem sessão ativa válida (ex.: navegador reaberto sem "Lembrar-me", ou cookie expirado)
+        // Não existe uma sessão ativa válida.
       }
 
       if (ativo) {
@@ -132,6 +143,7 @@ export function AuthProvider({ children }) {
     const { tokenAcesso, usuario: dadosUsuario } = resposta;
 
     salvarAutenticacao(tokenAcesso, dadosUsuario, Boolean(lembrarMe));
+
     setToken(tokenAcesso);
     setUsuario(dadosUsuario);
 
@@ -141,9 +153,11 @@ export function AuthProvider({ children }) {
   const renovarToken = useCallback(async () => {
     const persistente = ehSessaoPersistente();
     const renovacao = await authService.renovarSessao(persistente);
+
     const { tokenAcesso, usuario: dadosUsuario } = renovacao;
 
     salvarAutenticacao(tokenAcesso, dadosUsuario, persistente);
+
     setToken(tokenAcesso);
     setUsuario(dadosUsuario);
 
@@ -156,7 +170,7 @@ export function AuthProvider({ children }) {
         await authService.logout(token);
       }
     } catch {
-      // Ignora falhas de rede no encerramento da sessão
+      // Encerra a sessão local mesmo se a API estiver indisponível.
     } finally {
       limparAutenticacao();
       setToken(null);
