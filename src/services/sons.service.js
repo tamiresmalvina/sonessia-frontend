@@ -23,6 +23,26 @@ export const audioService = {
   async obterAudio(idAudio) {
     return requisicaoApi(`/audios/${idAudio}`, { method: 'GET' });
   },
+
+  async criarAudio(tokenAcesso, metadados, arquivo) {
+    const formulario = new FormData();
+    formulario.append("metadados", JSON.stringify(metadados));
+    formulario.append("arquivo", arquivo, arquivo.name);
+
+    return requisicaoApi("/audios", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tokenAcesso}` },
+      body: formulario,
+    });
+  },
+
+  async atualizarAudio(tokenAcesso, idAudio, metadados) {
+    return requisicaoApi(`/audios/${encodeURIComponent(idAudio)}`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${tokenAcesso}` },
+      body: JSON.stringify(metadados),
+    });
+  },
 };
 
 /**

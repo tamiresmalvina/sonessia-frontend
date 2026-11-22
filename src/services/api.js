@@ -10,9 +10,11 @@ const BASE_URL = import.meta.env?.VITE_API_URL || "http://localhost:3000";
  */
 export async function requisicaoApi(caminho, opcoes = {}) {
   const url = `${BASE_URL}${caminho}`;
+  const ehMultipart =
+    typeof FormData !== "undefined" && opcoes.body instanceof FormData;
 
   const headers = {
-    "Content-Type": "application/json",
+    ...(!ehMultipart ? { "Content-Type": "application/json" } : {}),
     ...(opcoes.headers || {}),
   };
 
