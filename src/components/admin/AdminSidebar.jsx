@@ -52,7 +52,7 @@ const ITENS_MENU = [
     nome: "Áudios",
     rota: "/admin/audios",
     icone: Music,
-    disponivel: false,
+    disponivel: true,
   },
   {
     nome: "Ambientes prontos",
