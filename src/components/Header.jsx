@@ -102,6 +102,7 @@ export default function Header({
           >
             Criar conta
           </Link>
+          
           <button
             type="button"
             onClick={onAlternarTema}
