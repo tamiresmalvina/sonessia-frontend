@@ -15,14 +15,6 @@ import {
   Wind,
 } from "lucide-react";
 
-export const categorias = [
-  "Todos",
-  "Natureza",
-  "Instrumental",
-  "Ambiente",
-  "Ruídos",
-];
-
 export const coresCategorias = {
   Natureza: "var(--cyan)",
   Instrumental: "var(--violet)",
@@ -90,14 +82,6 @@ export const volumesIniciais = {
 
 const imagemUnsplash = (id) =>
   `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=900&q=80`;
-
-export const categoriasAmbientes = [
-  "Todos",
-  "Foco",
-  "Sono",
-  "Relaxamento",
-  "Mascaramento",
-];
 
 export const ambientesProntos = [
   {
@@ -173,3 +157,16 @@ export const ambientesProntos = [
     descricaoImagem: "Vista de cachoeira pela janela do trem",
   },
 ];
+
+const aliasesCategoriasApiParaMock = {
+  Ruído: "Ruídos",
+};
+
+export function filtrarMockPorCategoria(itens, categoriaSelecionada) {
+  if (categoriaSelecionada === "Todos") return itens;
+
+  const categoriaMock = Object.hasOwn(aliasesCategoriasApiParaMock, categoriaSelecionada)
+    ? aliasesCategoriasApiParaMock[categoriaSelecionada]
+    : categoriaSelecionada;
+  return itens.filter((item) => item.categoria === categoriaMock);
+}

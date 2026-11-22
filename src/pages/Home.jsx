@@ -9,12 +9,12 @@ import Player from "../components/player/Player";
 
 import {
   sons,
-  categorias,
   coresCategorias,
   volumesIniciais,
   ambientesProntos,
-  categoriasAmbientes,
+  filtrarMockPorCategoria,
 } from "../data/sons";
+import { categoriasService } from "../services/categorias.service.js";
 
 export default function Home() {
   const [temaEscuro, setTemaEscuro] = useState(() => {
@@ -24,26 +24,89 @@ export default function Home() {
   const [pagina, setPagina] = useState("sons");
   const [filtroSons, setFiltroSons] = useState("Todos");
   const [filtroAmbientes, setFiltroAmbientes] = useState("Todos");
+  const [categoriasAudio, setCategoriasAudio] = useState([]);
+  const [categoriasAmbiente, setCategoriasAmbiente] = useState([]);
+  const [carregandoCategorias, setCarregandoCategorias] = useState(true);
+  const [erroCategorias, setErroCategorias] = useState("");
+  const [versaoCategorias, setVersaoCategorias] = useState(0);
   const [volumes, setVolumes] = useState(volumesIniciais);
+
+  const tipoCategorias = pagina === "sons" ? "AUDIO" : "AMBIENTE";
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", temaEscuro);
     localStorage.setItem("sonessia-theme", temaEscuro ? "dark" : "light");
   }, [temaEscuro]);
 
-  const sonsVisiveis = useMemo(() => {
-    if (filtroSons === "Todos") return sons;
+  useEffect(() => {
+    let ativo = true;
+    let requisicao = 0;
 
-    return sons.filter((som) => som.categoria === filtroSons);
+    async function carregarCategorias() {
+      const requisicaoAtual = ++requisicao;
+      setCarregandoCategorias(true);
+      setErroCategorias("");
+
+      try {
+        const resposta = await categoriasService.listar(null, tipoCategorias);
+        if (
+          !Array.isArray(resposta?.categorias) ||
+          !resposta.categorias.every((categoria) => typeof categoria?.nome === "string")
+        ) {
+          throw new Error("A resposta da API não contém uma lista válida de categorias.");
+        }
+
+        if (!ativo || requisicaoAtual !== requisicao) return;
+
+        const nomes = resposta.categorias.map((categoria) => categoria.nome);
+        if (tipoCategorias === "AUDIO") {
+          setCategoriasAudio(nomes);
+          setFiltroSons((atual) => (nomes.includes(atual) ? atual : "Todos"));
+        } else {
+          setCategoriasAmbiente(nomes);
+          setFiltroAmbientes((atual) => (nomes.includes(atual) ? atual : "Todos"));
+        }
+      } catch (falha) {
+        if (ativo && requisicaoAtual === requisicao) {
+          setErroCategorias(falha.message || "Não foi possível carregar as categorias.");
+        }
+      } finally {
+        if (ativo && requisicaoAtual === requisicao) {
+          setCarregandoCategorias(false);
+        }
+      }
+    }
+
+    function atualizarAoRetornar() {
+      if (document.visibilityState === "visible") {
+        void carregarCategorias();
+      }
+    }
+
+    void carregarCategorias();
+    window.addEventListener("focus", atualizarAoRetornar);
+    return () => {
+      ativo = false;
+      window.removeEventListener("focus", atualizarAoRetornar);
+    };
+  }, [tipoCategorias, versaoCategorias]);
+
+  const sonsVisiveis = useMemo(() => {
+    return filtrarMockPorCategoria(sons, filtroSons);
   }, [filtroSons]);
 
   const ambientesVisiveis = useMemo(() => {
-    if (filtroAmbientes === "Todos") return ambientesProntos;
-
-    return ambientesProntos.filter(
-      (ambiente) => ambiente.categoria === filtroAmbientes,
-    );
+    return filtrarMockPorCategoria(ambientesProntos, filtroAmbientes);
   }, [filtroAmbientes]);
+
+  const categoriasSonsVisiveis = useMemo(
+    () => [...new Set(["Todos", ...categoriasAudio])],
+    [categoriasAudio],
+  );
+  const categoriasAmbientesVisiveis = useMemo(
+    () => [...new Set(["Todos", ...categoriasAmbiente])],
+    [categoriasAmbiente],
+  );
 
   const quantidadeSonsAtivos = useMemo(() => {
     return Object.values(volumes).filter((volume) => volume > 0).length;
@@ -91,11 +154,28 @@ export default function Home() {
           </div>
 
           <FiltroCategorias
-            categorias={categorias}
+            categorias={categoriasSonsVisiveis}
             selecionada={filtroSons}
             onSelecionar={setFiltroSons}
             rotulo="Filtrar sons por categoria"
           />
+          {carregandoCategorias && (
+            <p className="mt-3 text-center text-xs text-fg-3" role="status">
+              Carregando categorias...
+            </p>
+          )}
+          {erroCategorias && (
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-center text-xs text-rose-700 dark:text-rose-300" role="alert">
+              <span>Não foi possível atualizar as categorias: {erroCategorias}</span>
+              <button
+                type="button"
+                onClick={() => setVersaoCategorias((atual) => atual + 1)}
+                className="font-semibold underline underline-offset-2"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          )}
 
           <Player
             sonsAtivos={sons.filter((som) => (volumes[som.id] ?? 0) > 0)}
@@ -151,11 +231,28 @@ export default function Home() {
           </div>
 
           <FiltroCategorias
-            categorias={categoriasAmbientes}
+            categorias={categoriasAmbientesVisiveis}
             selecionada={filtroAmbientes}
             onSelecionar={setFiltroAmbientes}
             rotulo="Filtrar ambientes por finalidade"
           />
+          {carregandoCategorias && (
+            <p className="mt-3 text-center text-xs text-fg-3" role="status">
+              Carregando categorias...
+            </p>
+          )}
+          {erroCategorias && (
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-center text-xs text-rose-700 dark:text-rose-300" role="alert">
+              <span>Não foi possível atualizar as categorias: {erroCategorias}</span>
+              <button
+                type="button"
+                onClick={() => setVersaoCategorias((atual) => atual + 1)}
+                className="font-semibold underline underline-offset-2"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          )}
 
           <ul className="mt-14 grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 lg:gap-y-14">
             {ambientesVisiveis.map((ambiente) => (
