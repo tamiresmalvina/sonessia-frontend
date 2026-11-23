@@ -1,8 +1,9 @@
+import { createElement } from "react";
 import { Info } from "lucide-react";
 import ControleVolume from "./ControleVolume";
+import { obterComponenteIconeAudio } from "../data/icones-audio.js";
 
-export default function SomCard({ som, volume, cor, onAlterarVolume }) {
-  const Icone = som.icone;
+export default function SomCard({ audio, volume, cor, onAlterarVolume }) {
   const ativo = volume > 0;
 
   return (
@@ -16,7 +17,10 @@ export default function SomCard({ som, volume, cor, onAlterarVolume }) {
         style={ativo ? { color: cor } : undefined}
         aria-hidden="true"
       >
-        <Icone size={22} strokeWidth={1.4} />
+        {createElement(obterComponenteIconeAudio(audio.icone), {
+          size: 22,
+          strokeWidth: 1.4,
+        })}
       </span>
 
       <div className="mt-3 flex items-center gap-1.5">
@@ -25,13 +29,13 @@ export default function SomCard({ som, volume, cor, onAlterarVolume }) {
             ativo ? "font-medium text-fg" : "text-fg-2"
           }`}
         >
-          {som.nome}
+          {audio.titulo}
         </span>
 
         <span
           className="inline-flex"
-          title={`Som da categoria ${som.categoria}`}
-          aria-label={`Categoria: ${som.categoria}`}
+          title={`Som da categoria ${audio.categoria}`}
+          aria-label={`Categoria: ${audio.categoria}`}
         >
           <Info
             size={13}
@@ -43,7 +47,7 @@ export default function SomCard({ som, volume, cor, onAlterarVolume }) {
       </div>
 
       <ControleVolume
-        nome={som.nome}
+        nome={audio.titulo}
         valor={volume}
         cor={cor}
         onAlterar={onAlterarVolume}

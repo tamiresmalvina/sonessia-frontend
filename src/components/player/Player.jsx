@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Pause, Play, Volume1, Volume2, VolumeX } from "lucide-react";
 import { TimerControl, useSessionTimer, statusLabel } from "../timer/timer";
 
@@ -13,16 +13,22 @@ function Equalizador() {
   );
 }
 
-export default function Player({ sonsAtivos }) {
-  const [tocando, setTocando] = useState(false);
-  const [volumeGeral, setVolumeGeral] = useState(100);
+export default function Player({
+  tocando,
+  volumeGeral,
+  sonsAtivos,
+  erroReproducao,
+  onReproduzirPausar,
+  onVolumeGeral,
+}) {
   const [volumeAberto, setVolumeAberto] = useState(false);
   const volumeRef = useRef(null);
 
-  const finalizar = () => setTocando(false);
+  const finalizar = useCallback(() => {
+    if (tocando) void onReproduzirPausar();
+  }, [onReproduzirPausar, tocando]);
   const timer = useSessionTimer(tocando, finalizar);
 
-  const quantidade = sonsAtivos.length;
   const somMutado = volumeGeral === 0;
 
   useEffect(() => {
@@ -47,14 +53,7 @@ export default function Player({ sonsAtivos }) {
     };
   }, []);
 
-  useEffect(() => {
-    if (quantidade === 0) {
-      setTocando(false);
-      timer.cancel();
-    }
-  }, [quantidade]);
-
-  if (quantidade === 0) return null;
+  if (sonsAtivos === 0) return null;
 
   return (
     <section
@@ -66,7 +65,7 @@ export default function Player({ sonsAtivos }) {
 
         <button
           type="button"
-          onClick={() => setTocando((atual) => !atual)}
+          onClick={() => void onReproduzirPausar()}
           aria-label={tocando ? "Pausar reprodução" : "Iniciar reprodução"}
           className="play grid size-[66px] shrink-0 place-items-center rounded-full text-white transition-transform hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2"
         >
@@ -118,7 +117,7 @@ export default function Player({ sonsAtivos }) {
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setVolumeGeral(somMutado ? 100 : 0)}
+                  onClick={() => onVolumeGeral(somMutado ? 100 : 0)}
                   aria-label={somMutado ? "Ativar volume" : "Silenciar"}
                   className="text-fg-2"
                 >
@@ -130,9 +129,7 @@ export default function Player({ sonsAtivos }) {
                   min="0"
                   max="100"
                   value={volumeGeral}
-                  onChange={(evento) =>
-                    setVolumeGeral(Number(evento.target.value))
-                  }
+                  onChange={(evento) => onVolumeGeral(Number(evento.target.value))}
                   aria-label="Volume geral"
                   className="vol"
                   style={{ "--v": `${volumeGeral}%` }}
@@ -151,9 +148,15 @@ export default function Player({ sonsAtivos }) {
         <span aria-hidden="true">·</span>
 
         <span>
-          {quantidade} {quantidade === 1 ? "som" : "sons"}
+          {sonsAtivos} {sonsAtivos === 1 ? "som" : "sons"}
         </span>
       </div>
+
+      {erroReproducao && (
+        <p className="mt-2 max-w-md text-center text-xs text-rose-700 dark:text-rose-300" role="alert">
+          {erroReproducao}
+        </p>
+      )}
 
       {timer.session && (
         <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-accent">
