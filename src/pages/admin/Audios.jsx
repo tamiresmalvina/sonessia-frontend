@@ -335,6 +335,63 @@ function ModalAudio({
   );
 }
 
+function ModalExclusaoAudio({ audio, erro, excluindo, onFechar, onConfirmar }) {
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-black/45 p-4 backdrop-blur-xs"
+      role="presentation"
+      onMouseDown={(evento) => {
+        if (evento.target === evento.currentTarget && !excluindo) onFechar();
+      }}
+    >
+      <section
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="modal-exclusao-audio-titulo"
+        aria-describedby="modal-exclusao-audio-descricao"
+        className="my-auto w-full max-w-md rounded-2xl border border-line-subtle bg-surface p-6 shadow-2xl sm:p-7"
+      >
+        <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
+          <Trash2 size={20} aria-hidden="true" />
+        </div>
+        <h2 id="modal-exclusao-audio-titulo" className="text-lg font-bold tracking-tight text-fg">
+          Excluir áudio?
+        </h2>
+        <p id="modal-exclusao-audio-descricao" className="mt-2 text-sm leading-relaxed text-fg-2">
+          O áudio <span className="font-semibold text-fg">“{audio.titulo}”</span> será removido
+          permanentemente. Esta ação não pode ser desfeita.
+        </p>
+
+        {erro && (
+          <div className="mt-4">
+            <Alerta tipo="erro" mensagem={erro} />
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onFechar}
+            disabled={excluindo}
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-line bg-surface px-5 text-sm font-medium text-fg-2 transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirmar}
+            disabled={excluindo}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-rose-600 px-5 text-sm font-medium text-white transition-colors hover:bg-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {excluindo && <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />}
+            {excluindo ? "Excluindo..." : "Excluir áudio"}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 const FORMULARIO_VAZIO = {
   titulo: "",
   tituloOriginal: "",
@@ -359,6 +416,9 @@ export default function Audios() {
   const [formulario, setFormulario] = useState(FORMULARIO_VAZIO);
   const [erroFormulario, setErroFormulario] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [audioExcluindo, setAudioExcluindo] = useState(null);
+  const [erroExclusao, setErroExclusao] = useState("");
+  const [operacaoExclusaoEmAndamento, setOperacaoExclusaoEmAndamento] = useState("");
 
   useEffect(() => {
     let ativo = true;
@@ -427,6 +487,36 @@ export default function Audios() {
 
   function atualizarCampo(campo, valor) {
     setFormulario((atual) => ({ ...atual, [campo]: valor }));
+  }
+
+  function abrirExclusao(audio) {
+    setAudioExcluindo(audio);
+    setErroExclusao("");
+    setErro("");
+    setSucesso("");
+  }
+
+  async function confirmarExclusao() {
+    if (!audioExcluindo) return;
+
+    const idAudio = audioExcluindo.idAudio;
+    setOperacaoExclusaoEmAndamento(idAudio);
+    setErroExclusao("");
+
+    try {
+      const resposta = await audioService.excluirAudio(token, idAudio);
+      setVersaoCarregamento((atual) => atual + 1);
+      setAudioExcluindo(null);
+      setSucesso(resposta?.mensagem || "Áudio excluído com sucesso.");
+    } catch (falha) {
+      setErroExclusao(
+        falha.codigo === "AUDIO_POSSUI_ASSOCIACOES"
+          ? "Não é possível excluir este áudio porque ele está sendo utilizado em um ou mais ambientes sonoros."
+          : falha.message || "Não foi possível excluir o áudio.",
+      );
+    } finally {
+      setOperacaoExclusaoEmAndamento("");
+    }
   }
 
   async function salvarAudio(evento) {
@@ -592,6 +682,16 @@ export default function Audios() {
                       <Pencil size={15} aria-hidden="true" />
                       Editar
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => abrirExclusao(audio)}
+                      disabled={Boolean(operacaoExclusaoEmAndamento)}
+                      aria-label={`Excluir áudio ${audio.titulo}`}
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 px-3 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-50 dark:border-rose-900/50 dark:text-rose-300 dark:hover:bg-rose-950/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Trash2 size={15} aria-hidden="true" />
+                      Excluir
+                    </button>
                   </div>
                 </li>
               );
@@ -610,6 +710,19 @@ export default function Audios() {
           onChange={atualizarCampo}
           onFechar={fecharFormulario}
           onSubmit={salvarAudio}
+        />
+      )}
+      {audioExcluindo && (
+        <ModalExclusaoAudio
+          audio={audioExcluindo}
+          erro={erroExclusao}
+          excluindo={operacaoExclusaoEmAndamento === audioExcluindo.idAudio}
+          onFechar={() => {
+            if (operacaoExclusaoEmAndamento) return;
+            setAudioExcluindo(null);
+            setErroExclusao("");
+          }}
+          onConfirmar={confirmarExclusao}
         />
       )}
     </div>
