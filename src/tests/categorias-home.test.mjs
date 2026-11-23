@@ -5,6 +5,10 @@ import {
   filtrarPorCategoria,
   obterCategoriasAtivas,
 } from "../utils/catalogo.js";
+import {
+  ambienteDuplicado,
+  composicoesIguais,
+} from "../utils/ambiente-duplicado.js";
 
 const audiosDaApi = [
   { idAudio: "audio-1", titulo: "Chuva", categoria: "Natureza", arquivo: "url-1" },
@@ -38,4 +42,90 @@ test("categorias retornadas incluem somente as ativas e recém-criadas", () => {
   };
 
   assert.deepEqual(obterCategoriasAtivas(resposta), ["Natureza", "Oceano"]);
+});
+
+test("composições iguais ignoram a ordem dos áudios", () => {
+  assert.equal(
+    composicoesIguais(
+      [
+        { idAudio: "audio-1", volume: 50 },
+        { idAudio: "audio-2", volume: 80 },
+      ],
+      [
+        { idAudio: "audio-2", volume: 80 },
+        { idAudio: "audio-1", volume: 50 },
+      ],
+    ),
+    true,
+  );
+});
+
+test("composições com volume ou quantidade diferente não são iguais", () => {
+  assert.equal(
+    composicoesIguais(
+      [{ idAudio: "audio-1", volume: 50 }],
+      [{ idAudio: "audio-1", volume: 51 }],
+    ),
+    false,
+  );
+  assert.equal(
+    composicoesIguais(
+      [{ idAudio: "audio-1", volume: 50 }],
+      [
+        { idAudio: "audio-1", volume: 50 },
+        { idAudio: "audio-2", volume: 40 },
+      ],
+    ),
+    false,
+  );
+});
+
+test("duplicidade exige nome igual e composição igual, ignorando o próprio ambiente", () => {
+  const ambientes = [
+    {
+      idAmbienteSonoro: "ambiente-1",
+      nome: "Foco",
+      audios: [
+        { idAudio: "audio-1", volume: 50 },
+        { idAudio: "audio-2", volume: 80 },
+      ],
+    },
+  ];
+
+  assert.equal(
+    ambienteDuplicado(
+      {
+        nome: "Foco",
+        audios: [
+          { idAudio: "audio-2", volume: 80 },
+          { idAudio: "audio-1", volume: 50 },
+        ],
+      },
+      ambientes,
+      "ambiente-1",
+    ),
+    false,
+  );
+  assert.equal(
+    ambienteDuplicado(
+      { nome: "Foco", audios: [{ idAudio: "audio-1", volume: 50 }] },
+      ambientes,
+      "ambiente-1",
+    ),
+    false,
+  );
+  assert.equal(
+    ambienteDuplicado(
+      {
+        nome: "Foco",
+        audios: [
+          { idAudio: "audio-1", volume: 50 },
+          { idAudio: "audio-2", volume: 80 },
+        ],
+      },
+      ambientes,
+      null,
+    ),
+    true,
+  );
 });

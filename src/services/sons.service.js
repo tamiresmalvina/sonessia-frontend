@@ -93,4 +93,94 @@ export const ambienteService = {
   async listarAmbientesPublicos() {
     return requisicaoApi('/ambientes-sonoros/publicos', { method: 'GET' });
   },
+
+  async listarAmbientesPreConfigurados(tokenAcesso, filtros = {}) {
+    const parametros = new URLSearchParams();
+    if (filtros.finalidade) parametros.set("finalidade", filtros.finalidade);
+    if (typeof filtros.publicado === "boolean") {
+      parametros.set("publicado", String(filtros.publicado));
+    }
+    const consulta = parametros.toString();
+    return requisicaoApi(`/ambientes-sonoros/pre-configurados${consulta ? `?${consulta}` : ""}`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${tokenAcesso}` },
+    });
+  },
+
+  async obterAmbientePreConfigurado(tokenAcesso, idAmbienteSonoro) {
+    return requisicaoApi(
+      `/ambientes-sonoros/pre-configurados/${encodeURIComponent(idAmbienteSonoro)}`,
+      {
+        method: "GET",
+        headers: { Authorization: `Bearer ${tokenAcesso}` },
+      },
+    );
+  },
+
+  async criarAmbientePreConfigurado(tokenAcesso, dados) {
+    return requisicaoApi("/ambientes-sonoros/pre-configurados", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tokenAcesso}` },
+      body: JSON.stringify(dados),
+    });
+  },
+
+  async criarAmbientePreConfiguradoComImagem(tokenAcesso, dados, arquivoImagem) {
+    const formulario = new FormData();
+    formulario.append("metadados", JSON.stringify(dados));
+    formulario.append("imagem", arquivoImagem, arquivoImagem.name);
+    return requisicaoApi("/ambientes-sonoros/pre-configurados", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tokenAcesso}` },
+      body: formulario,
+    });
+  },
+
+  async atualizarAmbientePreConfigurado(tokenAcesso, idAmbienteSonoro, dados) {
+    return requisicaoApi(
+      `/ambientes-sonoros/pre-configurados/${encodeURIComponent(idAmbienteSonoro)}`,
+      {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${tokenAcesso}` },
+        body: JSON.stringify(dados),
+      },
+    );
+  },
+
+  async atualizarAmbientePreConfiguradoComImagem(tokenAcesso, idAmbienteSonoro, dados, arquivoImagem) {
+    const formulario = new FormData();
+    formulario.append("metadados", JSON.stringify(dados));
+    if (arquivoImagem) {
+      formulario.append("imagem", arquivoImagem, arquivoImagem.name);
+    }
+    return requisicaoApi(
+      `/ambientes-sonoros/pre-configurados/${encodeURIComponent(idAmbienteSonoro)}`,
+      {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${tokenAcesso}` },
+        body: formulario,
+      },
+    );
+  },
+
+  async alterarPublicacaoAmbientePreConfigurado(tokenAcesso, idAmbienteSonoro, publicado) {
+    return requisicaoApi(
+      `/ambientes-sonoros/pre-configurados/${encodeURIComponent(idAmbienteSonoro)}/publicacao`,
+      {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${tokenAcesso}` },
+        body: JSON.stringify({ publicado }),
+      },
+    );
+  },
+
+  async excluirAmbientePreConfigurado(tokenAcesso, idAmbienteSonoro) {
+    return requisicaoApi(
+      `/ambientes-sonoros/pre-configurados/${encodeURIComponent(idAmbienteSonoro)}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${tokenAcesso}` },
+      },
+    );
+  },
 };

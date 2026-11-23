@@ -156,3 +156,65 @@ test("audioService mantém cadastro sem ícone e envia atualização ou remoçã
     globalThis.fetch = respostaOriginal;
   }
 });
+
+test("ambienteService envia o CRUD administrativo com autenticação", async () => {
+  const chamadas = [];
+  const respostaOriginal = globalThis.fetch;
+  globalThis.fetch = async (url, opcoes) => {
+    chamadas.push({ url, opcoes });
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: () => "application/json" },
+      json: async () => ({
+        ambientes: [],
+        ambiente: {
+          idAmbienteSonoro: "ambiente-1",
+          publicado: false,
+          audios: [],
+        },
+        mensagem: "Operação realizada.",
+      }),
+    };
+  };
+
+  try {
+    const { ambienteService } = await import("../services/sons.service.js");
+
+    await ambienteService.listarAmbientesPreConfigurados("jwt-admin");
+    await ambienteService.criarAmbientePreConfigurado("jwt-admin", {
+      nome: "Foco",
+      finalidade: "CONCENTRACAO",
+      audios: [{ idAudio: "audio-1", volume: 60 }],
+    });
+    await ambienteService.atualizarAmbientePreConfigurado(
+      "jwt-admin",
+      "ambiente-1",
+      { nome: "Foco intenso", audios: [{ idAudio: "audio-1", volume: 70 }] },
+    );
+    await ambienteService.alterarPublicacaoAmbientePreConfigurado(
+      "jwt-admin",
+      "ambiente-1",
+      true,
+    );
+    await ambienteService.excluirAmbientePreConfigurado("jwt-admin", "ambiente-1");
+
+    assert.equal(new URL(chamadas[0].url).pathname, "/ambientes-sonoros/pre-configurados");
+    assert.equal(chamadas[0].opcoes.method, "GET");
+    assert.equal(chamadas[0].opcoes.headers.Authorization, "Bearer jwt-admin");
+    assert.equal(chamadas[1].opcoes.method, "POST");
+    assert.equal(chamadas[2].opcoes.method, "PATCH");
+    assert.deepEqual(JSON.parse(chamadas[2].opcoes.body), {
+      nome: "Foco intenso",
+      audios: [{ idAudio: "audio-1", volume: 70 }],
+    });
+    assert.equal(
+      new URL(chamadas[3].url).pathname,
+      "/ambientes-sonoros/pre-configurados/ambiente-1/publicacao",
+    );
+    assert.deepEqual(JSON.parse(chamadas[3].opcoes.body), { publicado: true });
+    assert.equal(chamadas[4].opcoes.method, "DELETE");
+  } finally {
+    globalThis.fetch = respostaOriginal;
+  }
+});

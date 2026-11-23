@@ -58,7 +58,7 @@ const ITENS_MENU = [
     nome: "Ambientes prontos",
     rota: "/admin/ambientes",
     icone: Sparkles,
-    disponivel: false,
+    disponivel: true,
   },
   {
     nome: "Categorias",
