@@ -1,6 +1,87 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+test("listarAudios preserva o DTO real retornado por GET /audios", async () => {
+  const respostaOriginal = globalThis.fetch;
+  const payload = {
+    audios: [
+      {
+        idAudio: "audio-1",
+        titulo: "Chuva",
+        tituloOriginal: "Rain",
+        descricao: null,
+        categoria: "Natureza",
+        icone: "cloud-rain",
+        arquivo: "https://cdn.example.test/chuva.mp3",
+        fonte: "Acervo",
+        licenca: "CC0",
+      },
+    ],
+  };
+  let chamada;
+  globalThis.fetch = async (url, opcoes) => {
+    chamada = { url, opcoes };
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: () => "application/json" },
+      json: async () => payload,
+    };
+  };
+
+  try {
+    const { audioService } = await import("../services/sons.service.js");
+    const resposta = await audioService.listarAudios();
+
+    assert.equal(new URL(chamada.url).pathname, "/audios");
+    assert.equal(chamada.opcoes.method, "GET");
+    assert.deepEqual(resposta, payload);
+  } finally {
+    globalThis.fetch = respostaOriginal;
+  }
+});
+
+test("listarAmbientesPublicos preserva o envelope { ambientes } da API", async () => {
+  const respostaOriginal = globalThis.fetch;
+  const payload = {
+    ambientes: [
+      {
+        idAmbienteSonoro: "ambiente-1",
+        nome: "Foco",
+        audios: [
+          {
+            idAudio: "audio-1",
+            titulo: "Chuva",
+            arquivo: "https://cdn.example.test/chuva.mp3",
+            volume: 35,
+          },
+        ],
+      },
+    ],
+  };
+  let chamada;
+  globalThis.fetch = async (url, opcoes) => {
+    chamada = { url, opcoes };
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: () => "application/json" },
+      json: async () => payload,
+    };
+  };
+
+  try {
+    const { ambienteService } = await import("../services/sons.service.js");
+    const resposta = await ambienteService.listarAmbientesPublicos();
+
+    assert.equal(new URL(chamada.url).pathname, "/ambientes-sonoros/publicos");
+    assert.equal(chamada.opcoes.method, "GET");
+    assert.deepEqual(resposta, payload);
+  } finally {
+    globalThis.fetch = respostaOriginal;
+  }
+});
+
 test("audioService envia cadastro como multipart sem definir manualmente o boundary", async () => {
   const chamadas = [];
   const respostaOriginal = globalThis.fetch;

@@ -7,7 +7,8 @@ import { requisicaoApi } from './api.js';
 export const audioService = {
   /**
    * Lista todos os áudios cadastrados (público, sem autenticação).
-   * Retorna: { audios: Array<{ id, titulo, descricao, categoria, fonte, licenca, urlArquivo, duracao }> }
+   * Retorna DTOs com idAudio, titulo, descricao, categoria, icone, arquivo,
+   * tituloOriginal, fonte e licenca.
    *
    * @returns {Promise<{ audios: Array }>}
    */
@@ -41,6 +42,13 @@ export const audioService = {
       method: "PATCH",
       headers: { Authorization: `Bearer ${tokenAcesso}` },
       body: JSON.stringify(metadados),
+    });
+  },
+
+  async excluirAudio(tokenAcesso, idAudio) {
+    return requisicaoApi(`/audios/${encodeURIComponent(idAudio)}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${tokenAcesso}` },
     });
   },
 };
@@ -79,7 +87,8 @@ export const ambienteService = {
 
   /**
    * Lista os ambientes pré-configurados públicos.
-   * @returns {Promise<{ ambientesSonoros: Array }>}
+   * Retorna { ambientes: Array } com os áudios associados por idAudio.
+   * @returns {Promise<{ ambientes: Array }>}
    */
   async listarAmbientesPublicos() {
     return requisicaoApi('/ambientes-sonoros/publicos', { method: 'GET' });

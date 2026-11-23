@@ -2,25 +2,40 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  ambientesProntos,
-  filtrarMockPorCategoria,
-  sons,
-} from "../data/sons.js";
+  filtrarPorCategoria,
+  obterCategoriasAtivas,
+} from "../utils/catalogo.js";
 
-test("filtros da Home preservam Todos e mapeiam Ruído por alias exato", () => {
-  assert.equal(filtrarMockPorCategoria(sons, "Todos").length, sons.length);
-  assert.deepEqual(
-    filtrarMockPorCategoria(sons, "Ruído").map((som) => som.id),
-    ["branco", "marrom", "rosa"],
-  );
-  assert.deepEqual(filtrarMockPorCategoria(sons, "Teste"), []);
+const audiosDaApi = [
+  { idAudio: "audio-1", titulo: "Chuva", categoria: "Natureza", arquivo: "url-1" },
+  { idAudio: "audio-2", titulo: "Piano", categoria: "Instrumental", arquivo: "url-2" },
+];
+
+test("filtro Todos preserva todos os áudios recebidos pela API", () => {
+  assert.deepEqual(filtrarPorCategoria(audiosDaApi, "Todos"), audiosDaApi);
 });
 
-test("filtros de ambientes prontos usam a categoria selecionada sem aproximações", () => {
-  assert.equal(filtrarMockPorCategoria(ambientesProntos, "Todos").length, ambientesProntos.length);
+test("filtros usam a categoria exata e aceitam novas categorias", () => {
+  const comCategoriaNova = [
+    ...audiosDaApi,
+    { idAudio: "audio-3", titulo: "Mar", categoria: "Oceano", arquivo: "url-3" },
+  ];
+
   assert.deepEqual(
-    filtrarMockPorCategoria(ambientesProntos, "Foco").map((ambiente) => ambiente.id),
-    ["biblioteca-silenciosa", "cafeteria"],
+    filtrarPorCategoria(comCategoriaNova, "Oceano").map((audio) => audio.idAudio),
+    ["audio-3"],
   );
-  assert.deepEqual(filtrarMockPorCategoria(ambientesProntos, "A"), []);
+  assert.deepEqual(filtrarPorCategoria(comCategoriaNova, "Inexistente"), []);
+});
+
+test("categorias retornadas incluem somente as ativas e recém-criadas", () => {
+  const resposta = {
+    categorias: [
+      { nome: "Natureza", ativa: true },
+      { nome: "Instrumental", ativa: false },
+      { nome: "Oceano", ativa: true },
+    ],
+  };
+
+  assert.deepEqual(obterCategoriasAtivas(resposta), ["Natureza", "Oceano"]);
 });

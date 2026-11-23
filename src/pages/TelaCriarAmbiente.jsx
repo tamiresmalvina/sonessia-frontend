@@ -398,7 +398,7 @@ export function TelaCriarAmbiente({ tema, alternarTema }) {
       ambienteService
         .listarAmbientesPublicos()
         .then((dados) => {
-          setAmbientesProntos(dados?.ambientesSonoros ?? []);
+          setAmbientesProntos(dados?.ambientes ?? []);
         })
         .catch(() => {
           setAmbientesProntos([]);
