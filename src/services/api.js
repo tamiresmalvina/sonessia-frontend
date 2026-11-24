@@ -10,16 +10,17 @@ const BASE_URL = import.meta.env?.VITE_API_URL || "http://localhost:3000";
  */
 export async function requisicaoApi(caminho, opcoes = {}) {
   const url = `${BASE_URL}${caminho}`;
+  const { responseType, ...opcoesFetch } = opcoes;
   const ehMultipart =
-    typeof FormData !== "undefined" && opcoes.body instanceof FormData;
+    typeof FormData !== "undefined" && opcoesFetch.body instanceof FormData;
 
   const headers = {
     ...(!ehMultipart ? { "Content-Type": "application/json" } : {}),
-    ...(opcoes.headers || {}),
+    ...(opcoesFetch.headers || {}),
   };
 
   const configuracao = {
-    ...opcoes,
+    ...opcoesFetch,
     headers,
     credentials: "include",
   };
@@ -64,6 +65,10 @@ export async function requisicaoApi(caminho, opcoes = {}) {
     erro.codigo = dados?.erro?.codigo;
     erro.detalhes = dados?.erro?.detalhes || [];
     throw erro;
+  }
+
+  if (responseType === "blob") {
+    return resposta.blob();
   }
 
   return dados;

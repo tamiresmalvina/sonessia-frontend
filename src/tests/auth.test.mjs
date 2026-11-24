@@ -882,3 +882,143 @@ test('ambienteService.criarAmbiente envia POST para /ambientes-sonoros com token
   assert.equal(opcoesChamadas.body, JSON.stringify(dados));
   assert.equal(resposta.mensagem, 'Ambiente criado com sucesso.');
 });
+
+test('authService envia as operações de configurações com os contratos autenticados', async () => {
+  const chamadas = [];
+  globalThis.fetch = async (url, opcoes) => {
+    chamadas.push({ url, ...opcoes });
+    return {
+      ok: true,
+      status: 200,
+      headers: {
+        get: (nome) =>
+          nome.toLowerCase() === 'content-type' ? 'application/json' : null,
+      },
+      json: async () => ({ mensagem: 'Operação realizada.' }),
+    };
+  };
+  const { authService } = await import('../services/auth.service.js');
+  const token = 'token_admin_teste';
+
+  await authService.atualizarNome(token, 'Admin Sonessia');
+  await authService.solicitarAlteracaoEmail(token, 'novo@sonessia.com', 'SenhaAtual@1');
+  await authService.obterAlteracaoEmailPendente(token);
+  await authService.cancelarAlteracaoEmail(token);
+  await authService.reenviarCodigoAlteracaoEmail(token);
+  await authService.confirmarEmailAtual(token, '123456');
+  await authService.confirmarNovoEmail(token, '654321');
+  await authService.alterarSenha(token, {
+    senhaAtual: 'SenhaAtual@1',
+    novaSenha: 'SenhaNova@2',
+    confirmarNovaSenha: 'SenhaNova@2',
+  });
+
+  assert.deepEqual(
+    chamadas.map(({ url, method, body, headers }) => ({
+      endpoint: url.replace('http://localhost:3000', ''),
+      method,
+      body: body ? JSON.parse(body) : undefined,
+      autorizacao: headers.Authorization,
+    })),
+    [
+      {
+        endpoint: '/autenticacao/eu',
+        method: 'PATCH',
+        body: { nome: 'Admin Sonessia' },
+        autorizacao: `Bearer ${token}`,
+      },
+      {
+        endpoint: '/autenticacao/solicitar-alteracao-email',
+        method: 'POST',
+        body: { novoEmail: 'novo@sonessia.com', senhaAtual: 'SenhaAtual@1' },
+        autorizacao: `Bearer ${token}`,
+      },
+      {
+        endpoint: '/autenticacao/eu/alteracao-email',
+        method: 'GET',
+        body: undefined,
+        autorizacao: `Bearer ${token}`,
+      },
+      {
+        endpoint: '/autenticacao/eu/alteracao-email',
+        method: 'DELETE',
+        body: undefined,
+        autorizacao: `Bearer ${token}`,
+      },
+      {
+        endpoint: '/autenticacao/eu/alteracao-email/reenviar-codigo',
+        method: 'POST',
+        body: {},
+        autorizacao: `Bearer ${token}`,
+      },
+      {
+        endpoint: '/autenticacao/confirmar-email-atual',
+        method: 'POST',
+        body: { codigo: '123456' },
+        autorizacao: `Bearer ${token}`,
+      },
+      {
+        endpoint: '/autenticacao/confirmar-novo-email',
+        method: 'POST',
+        body: { codigo: '654321' },
+        autorizacao: `Bearer ${token}`,
+      },
+      {
+        endpoint: '/autenticacao/eu/senha',
+        method: 'PATCH',
+        body: {
+          senhaAtual: 'SenhaAtual@1',
+          novaSenha: 'SenhaNova@2',
+          confirmarNovaSenha: 'SenhaNova@2',
+        },
+        autorizacao: `Bearer ${token}`,
+      },
+    ],
+  );
+});
+
+test('authService envia a foto como binário e recebe a imagem privada como Blob', async () => {
+  const foto = new Blob(['imagem'], { type: 'image/png' });
+  const chamadas = [];
+  globalThis.fetch = async (url, opcoes) => {
+    chamadas.push({ url, ...opcoes });
+    if (opcoes.method === 'GET') {
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => 'image/png' },
+        blob: async () => foto,
+      };
+    }
+
+    return {
+      ok: true,
+      status: 200,
+      headers: {
+        get: (nome) =>
+          nome.toLowerCase() === 'content-type' ? 'application/json' : null,
+      },
+      json: async () => ({ fotoPerfil: '/autenticacao/eu/foto-perfil' }),
+    };
+  };
+  const { authService } = await import('../services/auth.service.js');
+  const token = 'token_admin_foto';
+
+  const respostaUpload = await authService.atualizarFotoPerfil(token, foto);
+  const imagemCarregada = await authService.obterFotoPerfil(token);
+  await authService.removerFotoPerfil(token);
+
+  assert.equal(chamadas[0].url, 'http://localhost:3000/autenticacao/eu/foto-perfil');
+  assert.equal(chamadas[0].method, 'PUT');
+  assert.equal(chamadas[0].body, foto);
+  assert.equal(chamadas[0].headers['Content-Type'], 'image/png');
+  assert.equal(chamadas[0].headers.Authorization, `Bearer ${token}`);
+  assert.deepEqual(respostaUpload, {
+    fotoPerfil: '/autenticacao/eu/foto-perfil',
+  });
+  assert.equal(chamadas[1].method, 'GET');
+  assert.equal(chamadas[1].headers.Authorization, `Bearer ${token}`);
+  assert.equal(imagemCarregada, foto);
+  assert.equal(chamadas[2].method, 'DELETE');
+  assert.equal(chamadas[2].headers.Authorization, `Bearer ${token}`);
+});

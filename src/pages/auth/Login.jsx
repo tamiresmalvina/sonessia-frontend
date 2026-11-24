@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../contexts/useAuth.js";
 import { SonessiaLogo } from "../../components/auth/SonessiaLogo.jsx";
@@ -8,9 +8,13 @@ import { PainelVisualSonoro } from "../../components/auth/PainelVisualSonoro.jsx
 export default function Login() {
   const { login, usuario, estaAutenticado, carregando } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [mensagemSucesso, setMensagemSucesso] = useState(
+    location.state?.mensagem || "",
+  );
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [lembrarMe, setLembrarMe] = useState(false);
   const [erro, setErro] = useState("");
@@ -32,6 +36,7 @@ export default function Login() {
 
     setErro("");
     setEmailNaoVerificado(false);
+    setMensagemSucesso("");
 
     if (!email.trim()) {
       setErro("Informe o seu e-mail.");
@@ -98,6 +103,15 @@ export default function Login() {
           </div>
 
           {/* Mensagem de erro */}
+          {mensagemSucesso && (
+            <div
+              role="status"
+              className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50/80 p-4 text-sm text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300"
+            >
+              {mensagemSucesso}
+            </div>
+          )}
+
           {erro && (
             <div
               role="alert"

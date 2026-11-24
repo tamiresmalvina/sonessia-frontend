@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { AuthContext } from "./AuthContextInstance.js";
 import { authService } from "../services/auth.service.js";
 
@@ -77,6 +77,7 @@ export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(() => obterUsuarioArmazenado());
   const [token, setToken] = useState(() => obterTokenArmazenado());
   const [carregando, setCarregando] = useState(true);
+  const usuarioRef = useRef(usuario);
 
   useEffect(() => {
     let ativo = true;
@@ -90,6 +91,7 @@ export function AuthProvider({ children }) {
           const dados = await authService.obterUsuarioAtual(tokenAtual);
 
           if (ativo && dados?.usuario) {
+            usuarioRef.current = dados.usuario;
             setUsuario(dados.usuario);
             setToken(tokenAtual);
 
@@ -107,6 +109,7 @@ export function AuthProvider({ children }) {
         const renovacao = await authService.renovarSessao(persistente);
 
         if (ativo && renovacao?.tokenAcesso && renovacao?.usuario) {
+          usuarioRef.current = renovacao.usuario;
           salvarAutenticacao(
             renovacao.tokenAcesso,
             renovacao.usuario,
@@ -125,6 +128,7 @@ export function AuthProvider({ children }) {
 
       if (ativo) {
         limparAutenticacao();
+        usuarioRef.current = null;
         setToken(null);
         setUsuario(null);
         setCarregando(false);
@@ -144,6 +148,7 @@ export function AuthProvider({ children }) {
 
     salvarAutenticacao(tokenAcesso, dadosUsuario, Boolean(lembrarMe));
 
+    usuarioRef.current = dadosUsuario;
     setToken(tokenAcesso);
     setUsuario(dadosUsuario);
 
@@ -158,11 +163,22 @@ export function AuthProvider({ children }) {
 
     salvarAutenticacao(tokenAcesso, dadosUsuario, persistente);
 
+    usuarioRef.current = dadosUsuario;
     setToken(tokenAcesso);
     setUsuario(dadosUsuario);
 
     return tokenAcesso;
   }, []);
+
+  const atualizarUsuario = useCallback((alteracoes) => {
+    if (!usuarioRef.current) return null;
+
+    const usuarioAtualizado = { ...usuarioRef.current, ...alteracoes };
+    usuarioRef.current = usuarioAtualizado;
+    salvarAutenticacao(token, usuarioAtualizado, ehSessaoPersistente());
+    setUsuario(usuarioAtualizado);
+    return usuarioAtualizado;
+  }, [token]);
 
   const logout = useCallback(async () => {
     try {
@@ -173,6 +189,7 @@ export function AuthProvider({ children }) {
       // Encerra a sessão local mesmo se a API estiver indisponível.
     } finally {
       limparAutenticacao();
+      usuarioRef.current = null;
       setToken(null);
       setUsuario(null);
     }
@@ -185,6 +202,7 @@ export function AuthProvider({ children }) {
     estaAutenticado: Boolean(token && usuario),
     login,
     renovarToken,
+    atualizarUsuario,
     logout,
   };
 

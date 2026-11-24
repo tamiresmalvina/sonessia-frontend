@@ -70,7 +70,7 @@ const ITENS_MENU = [
     nome: "Configurações",
     rota: "/admin/configuracoes",
     icone: Settings,
-    disponivel: false,
+    disponivel: true,
   },
 ];
 

@@ -1,5 +1,9 @@
 import { requisicaoApi } from "./api.js";
 
+function cabecalhosAutenticados(tokenAcesso) {
+  return tokenAcesso ? { Authorization: `Bearer ${tokenAcesso}` } : {};
+}
+
 export const authService = {
   /**
    * Realiza o cadastro de um novo usuário na plataforma Sonessia.
@@ -41,9 +45,95 @@ export const authService = {
   async obterUsuarioAtual(tokenAcesso) {
     return requisicaoApi("/autenticacao/eu", {
       method: "GET",
+      headers: cabecalhosAutenticados(tokenAcesso),
+    });
+  },
+
+  async atualizarNome(tokenAcesso, nome) {
+    return requisicaoApi("/autenticacao/eu", {
+      method: "PATCH",
+      headers: cabecalhosAutenticados(tokenAcesso),
+      body: JSON.stringify({ nome }),
+    });
+  },
+
+  async obterFotoPerfil(tokenAcesso) {
+    return requisicaoApi("/autenticacao/eu/foto-perfil", {
+      method: "GET",
+      headers: cabecalhosAutenticados(tokenAcesso),
+      responseType: "blob",
+    });
+  },
+
+  async atualizarFotoPerfil(tokenAcesso, arquivo) {
+    return requisicaoApi("/autenticacao/eu/foto-perfil", {
+      method: "PUT",
       headers: {
-        Authorization: `Bearer ${tokenAcesso}`,
+        ...cabecalhosAutenticados(tokenAcesso),
+        "Content-Type": arquivo.type,
       },
+      body: arquivo,
+    });
+  },
+
+  async removerFotoPerfil(tokenAcesso) {
+    return requisicaoApi("/autenticacao/eu/foto-perfil", {
+      method: "DELETE",
+      headers: cabecalhosAutenticados(tokenAcesso),
+    });
+  },
+
+  async solicitarAlteracaoEmail(tokenAcesso, novoEmail, senhaAtual) {
+    return requisicaoApi("/autenticacao/solicitar-alteracao-email", {
+      method: "POST",
+      headers: cabecalhosAutenticados(tokenAcesso),
+      body: JSON.stringify({ novoEmail, senhaAtual }),
+    });
+  },
+
+  async obterAlteracaoEmailPendente(tokenAcesso) {
+    return requisicaoApi("/autenticacao/eu/alteracao-email", {
+      method: "GET",
+      headers: cabecalhosAutenticados(tokenAcesso),
+    });
+  },
+
+  async reenviarCodigoAlteracaoEmail(tokenAcesso) {
+    return requisicaoApi("/autenticacao/eu/alteracao-email/reenviar-codigo", {
+      method: "POST",
+      headers: cabecalhosAutenticados(tokenAcesso),
+      body: JSON.stringify({}),
+    });
+  },
+
+  async cancelarAlteracaoEmail(tokenAcesso) {
+    return requisicaoApi("/autenticacao/eu/alteracao-email", {
+      method: "DELETE",
+      headers: cabecalhosAutenticados(tokenAcesso),
+    });
+  },
+
+  async confirmarEmailAtual(tokenAcesso, codigo) {
+    return requisicaoApi("/autenticacao/confirmar-email-atual", {
+      method: "POST",
+      headers: cabecalhosAutenticados(tokenAcesso),
+      body: JSON.stringify({ codigo }),
+    });
+  },
+
+  async confirmarNovoEmail(tokenAcesso, codigo) {
+    return requisicaoApi("/autenticacao/confirmar-novo-email", {
+      method: "POST",
+      headers: cabecalhosAutenticados(tokenAcesso),
+      body: JSON.stringify({ codigo }),
+    });
+  },
+
+  async alterarSenha(tokenAcesso, dados) {
+    return requisicaoApi("/autenticacao/eu/senha", {
+      method: "PATCH",
+      headers: cabecalhosAutenticados(tokenAcesso),
+      body: JSON.stringify(dados),
     });
   },
 
