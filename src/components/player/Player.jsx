@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Pause, Play, Volume1, Volume2, VolumeX } from "lucide-react";
-import { TimerControl, useSessionTimer, statusLabel } from "../timer/timer";
+import { TimerControl } from "../timer/timer";
+import { statusLabel, useSessionTimer } from "../timer/useSessionTimer.js";
 
 function Equalizador() {
   return (

@@ -94,6 +94,19 @@ export const ambienteService = {
     return requisicaoApi('/ambientes-sonoros/publicos', { method: 'GET' });
   },
 
+  /**
+   * Obtém os detalhes de um ambiente pré-configurado público por ID.
+   * Retorna { ambiente: object } com os áudios associados e volumes configurados.
+   * @param {string} idAmbienteSonoro
+   * @returns {Promise<{ ambiente: object }>}
+   */
+  async obterAmbientePublico(idAmbienteSonoro) {
+    return requisicaoApi(
+      `/ambientes-sonoros/publicos/${encodeURIComponent(idAmbienteSonoro)}`,
+      { method: 'GET' },
+    );
+  },
+
   async listarAmbientesPreConfigurados(tokenAcesso, filtros = {}) {
     const parametros = new URLSearchParams();
     if (filtros.finalidade) parametros.set("finalidade", filtros.finalidade);

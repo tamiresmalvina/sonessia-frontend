@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Save, Trash2 } from "lucide-react";
 
 import Header from "../components/Header";
@@ -14,10 +15,14 @@ import { filtrarPorCategoria, obterCategoriasAtivas } from "../utils/catalogo.js
 import { obterCorCategoria } from "../utils/cor-categoria.js";
 
 export default function Home() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const abaQuery = searchParams.get("aba");
+  const pagina = abaQuery === "ambientes" ? "ambientes" : "sons";
+
   const [temaEscuro, setTemaEscuro] = useState(() => {
     return localStorage.getItem("sonessia-theme") === "dark";
   });
-  const [pagina, setPagina] = useState("sons");
   const [filtroSons, setFiltroSons] = useState("Todos");
   const [filtroAmbientes, setFiltroAmbientes] = useState("Todos");
   const [audios, setAudios] = useState([]);
@@ -206,14 +211,14 @@ export default function Home() {
   }
 
   function mudarPagina(novaPagina) {
-    setPagina(novaPagina);
+    setSearchParams(novaPagina === "ambientes" ? { aba: "ambientes" } : {});
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function reproduzirAmbiente(ambiente) {
-    setPagina("sons");
-    setFiltroSons("Todos");
-    void reprodutor.reproduzirComposicao(ambiente.audios);
+    if (ambiente?.idAmbienteSonoro) {
+      navigate(`/player/${ambiente.idAmbienteSonoro}`);
+    }
   }
 
   return (

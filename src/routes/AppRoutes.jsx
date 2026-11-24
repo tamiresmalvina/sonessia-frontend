@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Home from "../pages/Home";
+import TelaPlayer from "../pages/TelaPlayer";
 import Login from "../pages/auth/Login";
 import Cadastro from "../pages/auth/Cadastro";
 import ConfirmarEmail from "../pages/auth/ConfirmarEmail";
@@ -22,6 +23,8 @@ export default function AppRoutes() {
       <Routes>
         {/* Rotas Públicas */}
         <Route path="/" element={<Home />} />
+        <Route path="/player/:idAmbienteSonoro" element={<TelaPlayer />} />
+        <Route path="/ambientes/:idAmbienteSonoro" element={<TelaPlayer />} />
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/confirmar-email" element={<ConfirmarEmail />} />

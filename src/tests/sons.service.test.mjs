@@ -218,3 +218,40 @@ test("ambienteService envia o CRUD administrativo com autenticação", async () 
     globalThis.fetch = respostaOriginal;
   }
 });
+
+test("ambienteService.obterAmbientePublico consulta endpoint público sem autenticação", async () => {
+  const respostaOriginal = globalThis.fetch;
+  const payload = {
+    ambiente: {
+      idAmbienteSonoro: "ambiente-123",
+      nome: "Ruído para mascaramento",
+      categoria: "Mascaramento",
+      audios: [
+        { idAudio: "audio-1", titulo: "Ruído branco", arquivo: "https://cdn.example.test/branco.mp3", volume: 70 },
+        { idAudio: "audio-2", titulo: "Ventilador", arquivo: "https://cdn.example.test/ventilador.mp3", volume: 50 },
+      ],
+    },
+  };
+  let chamada;
+  globalThis.fetch = async (url, opcoes) => {
+    chamada = { url, opcoes };
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: () => "application/json" },
+      json: async () => payload,
+    };
+  };
+
+  try {
+    const { ambienteService } = await import("../services/sons.service.js");
+    const resposta = await ambienteService.obterAmbientePublico("ambiente-123");
+
+    assert.equal(new URL(chamada.url).pathname, "/ambientes-sonoros/publicos/ambiente-123");
+    assert.equal(chamada.opcoes.method, "GET");
+    assert.equal(chamada.opcoes.headers?.Authorization, undefined);
+    assert.deepEqual(resposta, payload);
+  } finally {
+    globalThis.fetch = respostaOriginal;
+  }
+});
