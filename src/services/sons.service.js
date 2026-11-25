@@ -74,6 +74,25 @@ export const ambienteService = {
   },
 
   /**
+   * Cria um novo ambiente sonoro com imagem de capa opcional via multipart/form-data.
+   * @param {string} tokenAcesso
+   * @param {{ nome: string, descricao?: string | null, finalidade: string, audios: Array }} dados
+   * @param {File | null} arquivoImagem
+   */
+  async criarAmbienteComImagem(tokenAcesso, dados, arquivoImagem) {
+    const formulario = new FormData();
+    formulario.append('metadados', JSON.stringify(dados));
+    if (arquivoImagem) {
+      formulario.append('imagem', arquivoImagem, arquivoImagem.name);
+    }
+    return requisicaoApi('/ambientes-sonoros', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${tokenAcesso}` },
+      body: formulario,
+    });
+  },
+
+  /**
    * Lista os ambientes sonoros do usuário autenticado.
    * @param {string} tokenAcesso
    * @returns {Promise<{ ambientesSonoros: Array }>}
@@ -81,6 +100,49 @@ export const ambienteService = {
   async listarAmbientes(tokenAcesso) {
     return requisicaoApi('/ambientes-sonoros', {
       method: 'GET',
+      headers: { Authorization: `Bearer ${tokenAcesso}` },
+    });
+  },
+
+  /**
+   * Obtém os detalhes de um ambiente sonoro do usuário autenticado por ID.
+   * @param {string} tokenAcesso
+   * @param {string} idAmbienteSonoro
+   * @returns {Promise<{ ambiente: object }>}
+   */
+  async obterAmbiente(tokenAcesso, idAmbienteSonoro) {
+    return requisicaoApi(`/ambientes-sonoros/${encodeURIComponent(idAmbienteSonoro)}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${tokenAcesso}` },
+    });
+  },
+
+  /**
+   * Atualiza um ambiente sonoro personalizado do usuário autenticado por ID.
+   * Endpoint: PATCH /ambientes-sonoros/:idAmbienteSonoro
+   * @param {string} tokenAcesso
+   * @param {string} idAmbienteSonoro
+   * @param {{ nome?: string, descricao?: string | null, finalidade?: string, audios?: Array<{ idAudio: string, volume: number }> }} dados
+   * @returns {Promise<{ mensagem: string, ambiente: object }>}
+   */
+  async atualizarAmbiente(tokenAcesso, idAmbienteSonoro, dados) {
+    return requisicaoApi(`/ambientes-sonoros/${encodeURIComponent(idAmbienteSonoro)}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${tokenAcesso}` },
+      body: JSON.stringify(dados),
+    });
+  },
+
+  /**
+   * Exclui um ambiente sonoro personalizado do usuário autenticado por ID.
+   * Endpoint: DELETE /ambientes-sonoros/:idAmbienteSonoro
+   * @param {string} tokenAcesso
+   * @param {string} idAmbienteSonoro
+   * @returns {Promise<{ mensagem: string }>}
+   */
+  async excluirAmbiente(tokenAcesso, idAmbienteSonoro) {
+    return requisicaoApi(`/ambientes-sonoros/${encodeURIComponent(idAmbienteSonoro)}`, {
+      method: 'DELETE',
       headers: { Authorization: `Bearer ${tokenAcesso}` },
     });
   },

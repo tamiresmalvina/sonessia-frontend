@@ -255,3 +255,39 @@ test("ambienteService.obterAmbientePublico consulta endpoint público sem autent
     globalThis.fetch = respostaOriginal;
   }
 });
+
+test("ambienteService.obterAmbiente consulta endpoint autenticado com token", async () => {
+  const respostaOriginal = globalThis.fetch;
+  const payload = {
+    ambiente: {
+      idAmbienteSonoro: "ambiente-user-1",
+      nome: "Meu Ambiente Personalizado",
+      origem: "PERSONALIZADO",
+      audios: [
+        { idAudio: "audio-1", titulo: "Chuva", arquivo: "https://cdn.example.test/chuva.mp3", volume: 60 },
+      ],
+    },
+  };
+  let chamada;
+  globalThis.fetch = async (url, opcoes) => {
+    chamada = { url, opcoes };
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: () => "application/json" },
+      json: async () => payload,
+    };
+  };
+
+  try {
+    const { ambienteService } = await import("../services/sons.service.js");
+    const resposta = await ambienteService.obterAmbiente("jwt-token-user", "ambiente-user-1");
+
+    assert.equal(new URL(chamada.url).pathname, "/ambientes-sonoros/ambiente-user-1");
+    assert.equal(chamada.opcoes.method, "GET");
+    assert.equal(chamada.opcoes.headers?.Authorization, "Bearer jwt-token-user");
+    assert.deepEqual(resposta, payload);
+  } finally {
+    globalThis.fetch = respostaOriginal;
+  }
+});
