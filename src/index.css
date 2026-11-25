@@ -1,5 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Geist:wght@300..600&family=Geist+Mono:wght@400;500&display=swap");
 @import "tailwindcss";
+@import "./styles/user-area.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 

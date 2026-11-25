@@ -1,0 +1,252 @@
+/* =========================================================
+   SONESSIA — USER AREA
+   Classes compartilhadas da área de usuário
+   ========================================================= */
+
+@layer components {
+  /* Layout */
+  .user-page {
+    @apply mx-auto w-full max-w-[1120px];
+  }
+
+  .user-page-header {
+    @apply flex flex-wrap items-end justify-between gap-x-8 gap-y-5;
+  }
+
+  .user-page-header-content {
+    @apply min-w-0 max-w-xl;
+  }
+
+  .user-page-eyebrow {
+    @apply mb-3 font-mono text-[12px] uppercase tracking-[0.18em] text-accent;
+  }
+
+  .user-page-title {
+    @apply text-[40px] font-light leading-[1.02] tracking-[-0.045em];
+    @apply md:text-[56px];
+  }
+
+  .user-page-description {
+    @apply mt-4 text-[15px] leading-relaxed text-fg-2;
+  }
+
+  .user-section {
+    @apply mt-10 md:mt-14;
+  }
+
+  .user-section-heading {
+    @apply flex items-end justify-between gap-4;
+    @apply border-b border-line-subtle pb-3;
+  }
+
+  .user-section-title {
+    @apply text-lg font-medium tracking-[-0.02em];
+  }
+
+  .user-section-count {
+    @apply ml-2 font-mono text-xs font-normal tabular-nums text-fg-3;
+  }
+
+  .user-section-hint {
+    @apply mt-1 text-[13px] text-fg-3;
+  }
+
+  /* Cards */
+  .user-card {
+    @apply overflow-hidden rounded-xl border border-line-subtle;
+    @apply bg-surface transition-all duration-200;
+  }
+
+  .user-card-interactive {
+    @apply hover:border-line hover:bg-surface-hover;
+  }
+
+  .user-card-image {
+    @apply aspect-[16/10] w-full object-cover;
+  }
+
+  .user-card-content {
+    @apply min-w-0 p-4;
+  }
+
+  .user-card-title {
+    @apply truncate text-sm font-medium tracking-[-0.01em];
+  }
+
+  .user-card-description {
+    @apply mt-1 line-clamp-2 text-[13px] leading-relaxed text-fg-2;
+  }
+
+  .user-card-meta {
+    @apply mt-3 flex items-center gap-2 text-xs text-fg-3;
+  }
+
+  .user-card-grid {
+    @apply grid grid-cols-1 gap-4;
+    @apply sm:grid-cols-2;
+    @apply lg:grid-cols-3;
+  }
+
+  /* Buttons */
+  .user-button {
+    @apply inline-flex shrink-0 items-center justify-center gap-2;
+    @apply whitespace-nowrap rounded-[10px] font-medium;
+    @apply transition-colors duration-200;
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-focus;
+    @apply focus-visible:ring-offset-2 focus-visible:ring-offset-bg;
+    @apply disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .user-button-md {
+    @apply h-11 px-5 text-sm;
+  }
+
+  .user-button-sm {
+    @apply h-9 px-3.5 text-[13px];
+  }
+
+  .user-button-primary {
+    @apply bg-accent text-on-accent hover:bg-accent-hover;
+    @apply active:bg-accent-active;
+  }
+
+  .user-button-secondary {
+    @apply border border-line bg-surface text-fg;
+    @apply hover:bg-surface-hover active:bg-surface-active;
+  }
+
+  .user-button-ghost {
+    @apply text-fg-2 hover:bg-surface-hover hover:text-fg;
+    @apply active:bg-surface-active;
+  }
+
+  .user-button-danger {
+    @apply bg-danger text-on-accent hover:brightness-95;
+  }
+
+  .user-icon-button {
+    @apply grid size-10 shrink-0 place-items-center rounded-full;
+    @apply text-icon-2 transition-colors duration-200;
+    @apply hover:bg-surface-hover hover:text-fg;
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-focus;
+  }
+
+  /* Inputs */
+  .user-input {
+    @apply h-11 w-full rounded-[10px] border border-line;
+    @apply bg-surface px-3.5 text-sm text-fg;
+    @apply outline-none transition-colors duration-200;
+    @apply placeholder:text-fg-3;
+    @apply hover:border-line-strong;
+    @apply focus:border-focus focus:ring-1 focus:ring-focus;
+  }
+
+  .user-textarea {
+    @apply w-full resize-y rounded-lg border border-line;
+    @apply bg-surface px-3.5 py-3 text-[15px] leading-relaxed;
+    @apply text-fg outline-none transition-colors duration-200;
+    @apply placeholder:text-fg-3 hover:border-line-strong;
+    @apply focus:border-focus focus:ring-1 focus:ring-focus;
+  }
+
+  .user-field-label {
+    @apply mb-2 block text-sm font-medium text-fg;
+  }
+
+  .user-field-hint {
+    @apply mt-2 text-[13px] text-fg-3;
+  }
+
+  .user-field-error {
+    @apply mt-2 text-[13px] text-danger;
+  }
+
+  /* Feedback */
+  .user-empty-state {
+    @apply flex flex-col items-center rounded-xl;
+    @apply border border-dashed border-line;
+    @apply px-6 py-16 text-center sm:py-20;
+  }
+
+  .user-empty-icon {
+    @apply grid size-12 place-items-center rounded-xl;
+    @apply bg-accent-soft text-accent;
+  }
+
+  .user-empty-title {
+    @apply mt-5 text-xl font-medium tracking-[-0.02em];
+  }
+
+  .user-empty-description {
+    @apply mt-2 max-w-sm text-[15px] leading-relaxed text-fg-2;
+  }
+
+  .user-feedback-banner {
+    @apply flex gap-2.5 rounded-lg border border-line-subtle;
+    @apply px-3.5 py-3 text-sm leading-snug;
+  }
+
+  .user-skeleton {
+    @apply rounded-lg bg-bg-2 motion-safe:animate-pulse;
+  }
+
+  /* Menus */
+  .user-menu {
+    @apply absolute right-0 z-40 min-w-[210px];
+    @apply rounded-xl border border-line bg-surface p-1;
+    @apply shadow-lg;
+  }
+
+  .user-menu-item {
+    @apply flex h-11 w-full items-center gap-3 rounded-lg;
+    @apply px-3 text-left text-sm outline-none;
+    @apply transition-colors duration-200;
+    @apply hover:bg-surface-hover focus-visible:bg-surface-hover;
+  }
+
+  .user-menu-item-danger {
+    @apply text-danger hover:bg-danger-soft focus-visible:bg-danger-soft;
+  }
+
+  /* Modal */
+  .user-modal-overlay {
+    @apply fixed inset-0 z-[60] flex items-end justify-center;
+    @apply bg-[#141216]/50 sm:items-center sm:p-6;
+  }
+
+  .user-modal {
+    @apply relative flex max-h-[92dvh] w-full flex-col;
+    @apply rounded-t-2xl border border-line bg-surface;
+    @apply sm:rounded-2xl;
+  }
+
+  .user-modal-sm {
+    @apply sm:max-w-[420px];
+  }
+
+  .user-modal-md {
+    @apply sm:max-w-[520px];
+  }
+
+  .user-modal-lg {
+    @apply sm:max-w-[720px];
+  }
+
+  /* Toast */
+  .user-toast {
+    @apply flex w-full max-w-[460px] items-center gap-3;
+    @apply rounded-xl border border-line bg-surface;
+    @apply py-2.5 pl-4 pr-2 text-sm text-fg shadow-lg;
+  }
+
+  /* Transitions */
+  .user-transition {
+    @apply transition-colors duration-200;
+  }
+
+  /* Accessibility */
+  .user-focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-focus;
+    @apply focus-visible:ring-offset-2 focus-visible:ring-offset-bg;
+  }
+}
