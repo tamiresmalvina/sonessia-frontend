@@ -17,6 +17,13 @@ import Ambientes from "../pages/admin/Ambientes";
 import Categorias from "../pages/admin/Categorias";
 import Configuracoes from "../pages/admin/Configuracoes";
 
+// Infraestrutura e Layout da Área do Usuário Comum
+import UserLayout from "../layouts/UserLayout";
+import UserHome from "../pages/user/UserHome";
+import UserAmbientes from "../pages/user/UserAmbientes";
+import UserColecoes from "../pages/user/UserColecoes";
+import UserColecaoDetalhes from "../pages/user/UserColecaoDetalhes";
+
 export default function AppRoutes() {
   return (
     <BrowserRouter>
@@ -31,8 +38,20 @@ export default function AppRoutes() {
         <Route path="/recuperar-senha" element={<RecuperarSenha />} />
         <Route path="/redefinir-senha" element={<RedefinirSenha />} />
 
-        {/* Rota para usuário com perfil comum */}
-        <Route path="/comum" element={<Navigate to="/" replace />} />
+        {/* Rotas da Área do Usuário — Acesso exclusivo perfil COMUM */}
+        <Route element={<ProtectedRoute perfilExigido="COMUM" />}>
+          <Route path="/comum" element={<UserLayout />}>
+            <Route index element={<UserHome />} />
+            <Route path="ambientes" element={<UserAmbientes />} />
+            <Route path="colecoes" element={<UserColecoes />} />
+            <Route
+              path="colecoes/:idColecao"
+              element={<UserColecaoDetalhes />}
+            />
+          </Route>
+          <Route path="/app" element={<Navigate to="/comum" replace />} />
+          <Route path="/inicio" element={<Navigate to="/comum" replace />} />
+        </Route>
 
         {/* Rotas Administrativas — Acesso exclusivo perfil ADMIN */}
         <Route element={<ProtectedRoute perfilExigido="ADMIN" />}>
