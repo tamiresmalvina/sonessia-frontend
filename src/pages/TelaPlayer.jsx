@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -15,9 +15,10 @@ import {
 
 import Header from "../components/Header";
 import { TimerControl } from "../components/timer/timer";
-import { statusLabel, useSessionTimer } from "../components/timer/useSessionTimer.js";
+import { statusLabel } from "../components/timer/useSessionTimer.js";
 import { ambienteService } from "../services/sons.service.js";
-import { useReprodutor } from "../hooks/useReprodutor.js";
+import { useAuth } from "../contexts/useAuth.js";
+import { usePlayer } from "../contexts/usePlayer.js";
 
 function Equalizador({ animando = true }) {
   return (
@@ -184,28 +185,38 @@ function ModalSonsUtilizados({ aberto, aoFechar, ambiente }) {
 export default function TelaPlayer() {
   const { idAmbienteSonoro } = useParams();
   const navigate = useNavigate();
+  const { usuario, token } = useAuth();
+  const autenticado = Boolean(usuario);
+
+  const {
+    ambienteAtual,
+    tocando,
+    volumeGeral,
+    erroReproducao,
+    tempoSegundos,
+    timer,
+    tocarAmbiente,
+    reproduzirPausar,
+    definirVolumeGeral,
+    encerrarReproducao,
+  } = usePlayer();
+
+  const jaEstaTocandoEsteAmbiente = ambienteAtual?.idAmbienteSonoro === idAmbienteSonoro;
 
   const [temaEscuro, setTemaEscuro] = useState(() => {
     return localStorage.getItem("sonessia-theme") === "dark";
   });
-  const [ambiente, setAmbiente] = useState(null);
-  const [carregando, setCarregando] = useState(true);
+  const [ambiente, setAmbiente] = useState(
+    () => (jaEstaTocandoEsteAmbiente ? ambienteAtual : null),
+  );
+  const [carregando, setCarregando] = useState(
+    () => !jaEstaTocandoEsteAmbiente,
+  );
   const [erro, setErro] = useState("");
   const [volumeAberto, setVolumeAberto] = useState(false);
   const [modalSonsAberto, setModalSonsAberto] = useState(false);
-  const [tempoSegundos, setTempoSegundos] = useState(0);
 
   const volumeRef = useRef(null);
-  const reprodutor = useReprodutor();
-  const {
-    tocando,
-    volumeGeral,
-    erroReproducao,
-    reproduzirPausar,
-    reproduzirComposicao,
-    definirVolumeGeral,
-    limparTudo,
-  } = reprodutor;
 
   // Sincroniza tema
   useEffect(() => {
@@ -224,25 +235,39 @@ export default function TelaPlayer() {
         return;
       }
 
+      if (ambienteAtual?.idAmbienteSonoro === idAmbienteSonoro) {
+        if (ativo) {
+          setAmbiente(ambienteAtual);
+          setCarregando(false);
+          setErro("");
+        }
+        return;
+      }
+
       setCarregando(true);
       setErro("");
 
       try {
-        const resposta = await ambienteService.obterAmbientePublico(idAmbienteSonoro);
+        let resposta = null;
+        if (token) {
+          try {
+            resposta = await ambienteService.obterAmbiente(token, idAmbienteSonoro);
+          } catch {
+            // Se não for ambiente personalizado, busca na pública
+          }
+        }
+
+        if (!resposta?.ambiente) {
+          resposta = await ambienteService.obterAmbientePublico(idAmbienteSonoro);
+        }
+
         if (!resposta?.ambiente || typeof resposta.ambiente.idAmbienteSonoro !== "string") {
           throw new Error("Os dados do ambiente não puderam ser recuperados.");
         }
         if (!ativo) return;
 
         setAmbiente(resposta.ambiente);
-
-        const audiosComposicao = Array.isArray(resposta.ambiente.audios)
-          ? resposta.ambiente.audios
-          : [];
-
-        if (audiosComposicao.length > 0) {
-          void reproduzirComposicao(audiosComposicao);
-        }
+        await tocarAmbiente(resposta.ambiente);
       } catch (falha) {
         if (!ativo) return;
         setErro(
@@ -259,26 +284,12 @@ export default function TelaPlayer() {
 
     return () => {
       ativo = false;
-      limparTudo();
+      if (!autenticado) {
+        encerrarReproducao();
+      }
     };
-  }, [idAmbienteSonoro, reproduzirComposicao, limparTudo]);
-
-  // Temporizador de sessão integrado
-  const finalizarSessaoTimer = useCallback(() => {
-    if (tocando) void reproduzirPausar();
-  }, [reproduzirPausar, tocando]);
-  const timer = useSessionTimer(tocando, finalizarSessaoTimer);
-
-  // Contador de tempo decorrido efetivo
-  useEffect(() => {
-    if (!tocando) return undefined;
-
-    const intervalo = setInterval(() => {
-      setTempoSegundos((atual) => atual + 1);
-    }, 1000);
-
-    return () => clearInterval(intervalo);
-  }, [tocando]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idAmbienteSonoro, token, autenticado]);
 
   // Fechamento de popup de volume
   useEffect(() => {
@@ -322,17 +333,27 @@ export default function TelaPlayer() {
   const somMutado = volumeGeral === 0;
 
   function navegarVolta() {
-    navigate("/?aba=ambientes");
+    if (autenticado) {
+      if (window.history.length > 1) {
+        navigate(-1);
+      } else {
+        navigate("/comum");
+      }
+    } else {
+      navigate("/?aba=ambientes");
+    }
   }
 
   return (
     <div className="relative flex min-h-screen flex-col bg-bg text-fg">
-      <Header
-        pagina="ambientes"
-        onMudarPagina={(aba) => navigate(`/?aba=${aba}`)}
-        temaEscuro={temaEscuro}
-        onAlternarTema={() => setTemaEscuro((atual) => !atual)}
-      />
+      {!autenticado && (
+        <Header
+          pagina="ambientes"
+          onMudarPagina={(aba) => navigate(`/?aba=${aba}`)}
+          temaEscuro={temaEscuro}
+          onAlternarTema={() => setTemaEscuro((atual) => !atual)}
+        />
+      )}
 
       {/* Ondas decorativas fluidas de fundo */}
       <OndasDecorativas />
@@ -349,7 +370,7 @@ export default function TelaPlayer() {
             className="group inline-flex items-center gap-1.5 rounded-md px-1 py-1 text-[13px] font-normal text-fg-2 transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
           >
             <ChevronLeft size={16} className="transition-transform group-hover:-translate-x-0.5" />
-            <span>Ambientes prontos</span>
+            <span>{autenticado ? "Voltar para minha área" : "Ambientes prontos"}</span>
           </button>
         </div>
 
@@ -381,7 +402,7 @@ export default function TelaPlayer() {
               className="mt-6 inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             >
               <ArrowLeft size={16} />
-              Voltar para ambientes prontos
+              <span>{autenticado ? "Voltar para minha área" : "Voltar para ambientes prontos"}</span>
             </button>
           </div>
         )}
