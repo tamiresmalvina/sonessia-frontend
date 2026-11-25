@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Search,
   Play,
@@ -19,6 +19,7 @@ import { useAuth } from "../../contexts/useAuth.js";
 import { usePlayer } from "../../contexts/usePlayer.js";
 import { ambienteService } from "../../services/sons.service.js";
 import ModalNovoAmbiente from "../../components/user/ModalNovoAmbiente.jsx";
+import { lerComandoHomeAmbientes } from "../../utils/comando-home-ambientes.js";
 
 /**
  * Card individual de ambiente sonoro.
@@ -307,21 +308,38 @@ function ModalExcluirAmbiente({
  */
 export default function UserAmbientes() {
   const { usuario, token } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
+  const comandoInicial = useMemo(
+    () => lerComandoHomeAmbientes(location.state),
+    [location.state],
+  );
 
   const [ambientesUsuario, setAmbientesUsuario] = useState([]);
   const [ambientesPlataforma, setAmbientesPlataforma] = useState([]);
-  const [filtro, setFiltro] = useState("todos"); // "todos" | "usuario" | "plataforma"
+  const [filtro, setFiltro] = useState(() => comandoInicial.filtroInicial ?? "todos"); // "todos" | "usuario" | "plataforma"
   const [busca, setBusca] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
   const [versao, setVersao] = useState(0);
-  const [modalAberto, setModalAberto] = useState(false);
+  const [modalAberto, setModalAberto] = useState(() => comandoInicial.abrirModalNovo);
   const [ambienteParaEditar, setAmbienteParaEditar] = useState(null);
   const [ambienteParaExcluir, setAmbienteParaExcluir] = useState(null);
   const [excluindo, setExcluindo] = useState(false);
   const [erroExclusao, setErroExclusao] = useState(null);
   const [feedback, setFeedback] = useState(null);
+
+  useEffect(() => {
+    if (!comandoInicial.consumir) return;
+    navigate(
+      {
+        pathname: location.pathname,
+        search: location.search,
+        hash: location.hash,
+      },
+      { replace: true, state: comandoInicial.estadoRestante },
+    );
+  }, [comandoInicial, location.hash, location.pathname, location.search, navigate]);
 
   useEffect(() => {
     if (!feedback) return undefined;

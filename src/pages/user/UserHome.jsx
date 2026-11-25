@@ -1,17 +1,50 @@
 import {
   ArrowRight,
+  AudioLines,
   Compass,
   Ellipsis,
   FolderOpen,
+  LoaderCircle,
+  Pause,
   Play,
   Plus,
   SlidersHorizontal,
 } from "lucide-react";
 
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useAuth } from "../../contexts/useAuth.js";
-import homeMock from "../../mocks/home.mock.js";
+import { usePlayer } from "../../contexts/usePlayer.js";
+import { carregarDadosHome } from "../../services/home.service.js";
+
+function formatarTempoDesde(data) {
+  const instante = new Date(data).getTime();
+  if (!Number.isFinite(instante)) return "data indisponível";
+
+  const segundos = Math.max(0, Math.floor((Date.now() - instante) / 1000));
+  if (segundos < 60) return "há menos de 1 min";
+  const unidades = [
+    [86400, "day"],
+    [3600, "hour"],
+    [60, "minute"],
+  ];
+  const [duracao, unidade] = unidades.find(([tamanho]) => segundos >= tamanho);
+  const quantidade = Math.floor(segundos / duracao);
+  return new Intl.RelativeTimeFormat("pt-BR", { numeric: "auto" }).format(-quantidade, unidade);
+}
+
+function RetryButton({ onRetry }) {
+  return (
+    <button
+      type="button"
+      onClick={onRetry}
+      className="mt-3 text-xs font-medium text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+    >
+      Tentar novamente
+    </button>
+  );
+}
 
 /* =========================================================
    COMPONENTES AUXILIARES
@@ -52,28 +85,31 @@ function SectionHeader({ title, action, to, id }) {
    PLAY BUTTON
    ========================================================= */
 
-function PlayButton({ label, className = "" }) {
+function PlayButton({ environment, label, className = "" }) {
+  const { ambienteAtual, tocando, tocarAmbiente, reproduzirPausar } = usePlayer();
+  const selecionado = ambienteAtual?.idAmbienteSonoro === environment.idAmbienteSonoro;
+
   return (
     <button
       type="button"
-      disabled
-      aria-label={`Reproduzir ${label}`}
-      title="Reprodução será integrada posteriormente"
+      onClick={() => {
+        if (selecionado) void reproduzirPausar();
+        else void tocarAmbiente(environment);
+      }}
+      aria-label={selecionado && tocando ? `Pausar ${label}` : `Reproduzir ${label}`}
       className={`
         grid size-11 place-items-center rounded-full
         bg-[#F4F1FA] text-accent
         transition-colors duration-200
         hover:bg-white
-        disabled:cursor-default
         ${className}
       `}
     >
-      <Play
-        size={15}
-        fill="currentColor"
-        strokeWidth={0}
-        className="translate-x-px"
-      />
+      {selecionado && tocando ? (
+        <Pause size={15} fill="currentColor" strokeWidth={0} />
+      ) : (
+        <Play size={15} fill="currentColor" strokeWidth={0} className="translate-x-px" />
+      )}
     </button>
   );
 }
@@ -89,16 +125,18 @@ function RecentEnvironment({ environment }) {
         {/* Imagem */}
 
         <div className="aspect-[4/3] overflow-hidden rounded-xl border border-line-subtle bg-bg-2">
-          <img
-            src={environment.image}
-            alt=""
-            loading="lazy"
-            className="
-              size-full object-cover
-              transition-transform duration-500
-              group-hover:scale-[1.02]
-            "
-          />
+          {environment.image ? (
+            <img
+              src={environment.image}
+              alt=""
+              loading="lazy"
+              className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+            />
+          ) : (
+            <div className="grid size-full place-items-center text-icon-muted">
+              <AudioLines size={28} strokeWidth={1.3} aria-hidden="true" />
+            </div>
+          )}
         </div>
 
         {/* Categoria */}
@@ -138,6 +176,7 @@ function RecentEnvironment({ environment }) {
         {/* Reprodução */}
 
         <PlayButton
+          environment={environment.ambiente}
           label={environment.title}
           className="absolute bottom-3 right-3 z-10"
         />
@@ -147,7 +186,7 @@ function RecentEnvironment({ environment }) {
 
       <h3 className="mt-4 text-[15px] font-medium tracking-[-0.01em]">
         <Link
-          to="/comum/ambientes"
+          to={`/player/${environment.id}`}
           className="
             rounded-sm
             outline-none focus-visible:ring-2
@@ -185,18 +224,19 @@ function RecentEnvironment({ environment }) {
 
 /* =========================================================
    COLLECTION ITEM
-   Coleções ainda não possuem página/rota funcional.
    ========================================================= */
 
 function CollectionItem({ collection }) {
   return (
     <li>
-      <div
+      <Link
+        to={`/comum/colecoes/${collection.id}`}
         className="
           -mx-2 flex items-center gap-4
-          rounded-lg px-2 py-3
+          cursor-pointer rounded-lg px-2 py-3
           transition-colors duration-200
           hover:bg-surface-hover
+          outline-none focus-visible:ring-2 focus-visible:ring-focus
         "
       >
         {/* Thumbnail */}
@@ -243,7 +283,7 @@ function CollectionItem({ collection }) {
             {collection.environmentCount === 1 ? "ambiente" : "ambientes"}
           </span>
         </span>
-      </div>
+      </Link>
     </li>
   );
 }
@@ -257,6 +297,7 @@ function QuickAccessItem({
   title,
   description,
   to,
+  state,
   disabled = false,
 }) {
   const content = (
@@ -301,7 +342,7 @@ function QuickAccessItem({
 
   return (
     <li>
-      <Link to={to} className={className}>
+      <Link to={to} state={state} className={className}>
         {content}
       </Link>
     </li>
@@ -313,12 +354,87 @@ function QuickAccessItem({
    ========================================================= */
 
 export default function UserHome() {
-  const { usuario } = useAuth();
+  const { usuario, token } = useAuth();
+  const { ambienteAtual, tocando, tocarAmbiente, reproduzirPausar } = usePlayer();
+  const [tentativa, setTentativa] = useState(0);
+  const [estadoHome, setEstadoHome] = useState(null);
+
+  useEffect(() => {
+    let ativo = true;
+
+    if (!token || !usuario?.id) {
+      return () => { ativo = false; };
+    }
+
+    carregarDadosHome(token).then((resposta) => {
+      if (ativo) {
+        setEstadoHome({
+          token,
+          idUsuario: usuario.id,
+          tentativa,
+          ...resposta,
+        });
+      }
+    });
+
+    return () => { ativo = false; };
+  }, [token, usuario?.id, tentativa]);
 
   const nome = usuario?.nome?.trim().split(/\s+/)[0] || "usuário";
+  const sessaoAtual = estadoHome?.token === token &&
+    estadoHome?.idUsuario === usuario?.id &&
+    estadoHome?.tentativa === tentativa;
+  const home = sessaoAtual
+    ? estadoHome
+    : {
+        carregando: Boolean(token && usuario?.id),
+        recentes: { dados: [], erro: null },
+        ambientes: { dados: [], erro: null },
+        colecoes: { dados: [], erro: null },
+      };
+  const recentesReais = home.recentes?.dados ?? [];
+  const recentEnvironments = recentesReais.map((ambiente) => ({
+    id: ambiente.idAmbienteSonoro,
+    title: ambiente.nome,
+    description: ambiente.descricao,
+    sounds: (ambiente.audios ?? []).map((audio) => audio.titulo || audio.audio?.titulo).filter(Boolean),
+    image: ambiente.imagem,
+    category: ambiente.categoria || ambiente.finalidade,
+    ambiente,
+  }));
+  const continueListening = recentEnvironments[0]
+    ? {
+        ...recentEnvironments[0],
+        lastPlayed: formatarTempoDesde(recentesReais[0].ultimaReproducao),
+      }
+    : null;
+  const collections = (home.colecoes?.dados ?? []).map((colecao) => ({
+    id: colecao.idColecao,
+    name: colecao.nome,
+    environmentCount: colecao.quantidadeAmbientes,
+    image: null,
+  }));
+  const ambienteCount = home.ambientes?.dados.length;
+  const colecaoCount = home.colecoes?.dados.length;
+  const resumo = home.carregando
+    ? "Carregando seus ambientes e coleções..."
+    : [
+        home.ambientes?.erro
+          ? "Não foi possível carregar a contagem de ambientes"
+          : `${ambienteCount} ${ambienteCount === 1 ? "ambiente criado" : "ambientes criados"}`,
+        home.colecoes?.erro
+          ? "não foi possível carregar a contagem de coleções"
+          : `${colecaoCount} ${colecaoCount === 1 ? "coleção guardada" : "coleções guardadas"} na sua conta`,
+      ].join(" e ") + ".";
+  const tentarNovamente = useCallback(() => setTentativa((valor) => valor + 1), []);
 
-  const { summary, continueListening, recentEnvironments, collections } =
-    homeMock;
+  function reproduzirAmbiente(ambiente) {
+    if (ambienteAtual?.idAmbienteSonoro === ambiente.idAmbienteSonoro) {
+      void reproduzirPausar();
+    } else {
+      void tocarAmbiente(ambiente);
+    }
+  }
 
   return (
     <main
@@ -342,14 +458,17 @@ export default function UserHome() {
           <h1 className="user-page-title">Olá, {nome}</h1>
 
           <p className="user-page-description">
-            {summary.environments} ambientes criados e {summary.collections}{" "}
-            coleções guardadas na sua conta.
+            {resumo}
           </p>
+          {!home.carregando && (home.ambientes?.erro || home.colecoes?.erro) && (
+            <RetryButton onRetry={tentarNovamente} />
+          )}
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
           <Link
             to="/comum/ambientes"
+            state={{ acaoHome: "criar" }}
             className="
               user-button user-button-primary
               user-button-md inline-flex
@@ -377,18 +496,30 @@ export default function UserHome() {
         {/* Imagem */}
 
         <div className="relative aspect-[16/10] md:aspect-auto md:min-h-[300px]">
-          <img
-            src={continueListening.image}
-            alt="Plantas na janela durante a chuva"
-            className="absolute inset-0 size-full object-cover"
-          />
+          {continueListening?.image ? (
+            <img
+              src={continueListening.image}
+              alt={continueListening.title}
+              className="absolute inset-0 size-full object-cover"
+            />
+          ) : (
+            <div className="absolute inset-0 grid place-items-center bg-bg-2 text-icon-muted">
+              {home.carregando ? (
+                <LoaderCircle size={32} className="animate-spin" aria-hidden="true" />
+              ) : (
+                <AudioLines size={36} strokeWidth={1.3} aria-hidden="true" />
+              )}
+            </div>
+          )}
         </div>
 
         {/* Conteúdo */}
 
         <div className="flex flex-col justify-center p-6 md:p-10">
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent">
-            Continuar de onde parou · {continueListening.lastPlayed}
+            {continueListening
+              ? `Continuar de onde parou · ${continueListening.lastPlayed}`
+              : "Continuar de onde parou"}
           </p>
 
           <h2
@@ -399,42 +530,58 @@ export default function UserHome() {
               md:text-[36px]
             "
           >
-            {continueListening.title}
+            {continueListening?.title || (home.carregando
+              ? "Carregando seu histórico..."
+              : home.recentes?.erro
+                ? "Não foi possível carregar seu histórico"
+                : "Nenhum ambiente reproduzido recentemente")}
           </h2>
 
           <p className="mt-3 text-sm text-fg-2">
-            {continueListening.sounds.join(" · ")}
+            {continueListening
+              ? continueListening.sounds.join(" · ") || "Sem sons especificados"
+              : home.carregando
+                ? "Buscando suas reproduções recentes."
+                : home.recentes?.erro
+                  ? "O histórico não está disponível no momento."
+                  : "Os ambientes que você reproduzir aparecerão aqui."}
           </p>
 
-          <div className="mt-7 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              disabled
-              className="
-                user-button user-button-primary
-                user-button-md
-              "
-              title="Player será integrado posteriormente"
-            >
-              <Play size={16} fill="currentColor" strokeWidth={0} />
-              Reproduzir
-            </button>
+          {continueListening ? (
+            <div className="mt-7 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => reproduzirAmbiente(continueListening.ambiente)}
+                className="user-button user-button-primary user-button-md"
+              >
+                {ambienteAtual?.idAmbienteSonoro === continueListening.id && tocando ? (
+                  <Pause size={16} fill="currentColor" strokeWidth={0} />
+                ) : (
+                  <Play size={16} fill="currentColor" strokeWidth={0} />
+                )}
+                {ambienteAtual?.idAmbienteSonoro === continueListening.id && tocando
+                  ? "Pausar"
+                  : "Reproduzir"}
+              </button>
 
-            <Link
-              to="/comum/ambientes"
-              className="
-                inline-flex h-11 items-center
-                rounded-[10px] px-4 text-sm
-                font-medium text-fg-2
-                transition-colors duration-200
-                hover:bg-surface-hover hover:text-fg
-                outline-none focus-visible:ring-2
-                focus-visible:ring-focus
-              "
-            >
-              Ver ambiente
-            </Link>
-          </div>
+              <Link
+                to={`/player/${continueListening.id}`}
+                className="
+                  inline-flex h-11 items-center
+                  rounded-[10px] px-4 text-sm
+                  font-medium text-fg-2
+                  transition-colors duration-200
+                  hover:bg-surface-hover hover:text-fg
+                  outline-none focus-visible:ring-2
+                  focus-visible:ring-focus
+                "
+              >
+                Ver ambiente
+              </Link>
+            </div>
+          ) : !home.carregando && home.recentes?.erro ? (
+            <RetryButton onRetry={tentarNovamente} />
+          ) : null}
         </div>
       </section>
 
@@ -462,12 +609,24 @@ export default function UserHome() {
           />
 
           <ul className="mt-8 grid gap-x-8 gap-y-12 sm:grid-cols-2">
-            {recentEnvironments.map((environment) => (
-              <RecentEnvironment
-                key={environment.id}
-                environment={environment}
-              />
-            ))}
+            {home.carregando ? (
+              <li role="status" className="col-span-full text-sm text-fg-3">
+                Carregando ambientes reproduzidos recentemente...
+              </li>
+            ) : home.recentes?.erro ? (
+              <li className="col-span-full text-sm text-fg-2">
+                Não foi possível carregar os ambientes recentes.
+                <RetryButton onRetry={tentarNovamente} />
+              </li>
+            ) : recentEnvironments.length === 0 ? (
+              <li className="col-span-full text-sm text-fg-3">
+                Você ainda não reproduziu nenhum ambiente.
+              </li>
+            ) : (
+              recentEnvironments.map((environment) => (
+                <RecentEnvironment key={environment.id} environment={environment} />
+              ))
+            )}
           </ul>
         </section>
 
@@ -482,13 +641,29 @@ export default function UserHome() {
             <SectionHeader
               id="colecoes"
               title="Suas coleções"
-              action="Em breve"
+              action="Ver todas"
+              to="/comum/colecoes"
             />
 
             <ul className="divide-y divide-line-subtle">
-              {collections.map((collection) => (
-                <CollectionItem key={collection.id} collection={collection} />
-              ))}
+              {home.carregando ? (
+                <li role="status" className="py-3 text-sm text-fg-3">
+                  Carregando coleções...
+                </li>
+              ) : home.colecoes?.erro ? (
+                <li className="py-3 text-sm text-fg-2">
+                  Não foi possível carregar suas coleções.
+                  <RetryButton onRetry={tentarNovamente} />
+                </li>
+              ) : collections.length === 0 ? (
+                <li className="py-3 text-sm text-fg-3">
+                  Você ainda não possui coleções.
+                </li>
+              ) : (
+                collections.map((collection) => (
+                  <CollectionItem key={collection.id} collection={collection} />
+                ))
+              )}
             </ul>
           </section>
 
@@ -503,13 +678,14 @@ export default function UserHome() {
                 title="Criar ambiente"
                 description="Misture sons e ajuste cada volume"
                 to="/comum/ambientes"
+                state={{ acaoHome: "criar" }}
               />
 
               <QuickAccessItem
                 icon={FolderOpen}
                 title="Organizar coleções"
                 description="Ordene seus ambientes em sequências"
-                disabled
+                to="/comum/colecoes"
               />
 
               <QuickAccessItem
@@ -517,6 +693,7 @@ export default function UserHome() {
                 title="Ambientes prontos"
                 description="Combinações da plataforma"
                 to="/comum/ambientes"
+                state={{ filtroInicial: "plataforma" }}
               />
             </ul>
           </section>
