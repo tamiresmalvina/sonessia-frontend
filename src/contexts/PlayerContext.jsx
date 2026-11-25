@@ -1,13 +1,30 @@
-import { useState, useEffect, useMemo, useCallback, useSyncExternalStore } from "react";
+import { useState, useEffect, useMemo, useCallback, useSyncExternalStore, useRef, useLayoutEffect } from "react";
 import { PlayerContext } from "./PlayerContextInstance.js";
 import { criarControladorReproducaoAudio } from "../services/reprodutor-audio.js";
 import { ambienteService } from "../services/sons.service.js";
+import { historicoReproducaoService } from "../services/historico-reproducao.service.js";
+import { iniciarReproducaoComHistorico } from "../services/iniciar-reproducao-com-historico.js";
 import { useAuth } from "./useAuth.js";
 import { useSessionTimer } from "../components/timer/useSessionTimer.js";
 
 export function PlayerProvider({ children }) {
-  const { token } = useAuth();
+  const { token, usuario } = useAuth();
   const [controlador] = useState(criarControladorReproducaoAudio);
+  const authSessaoRef = useRef({ token, idUsuario: usuario?.id, geracao: 0 });
+  const registrosPendentesRef = useRef(new Map());
+
+  useLayoutEffect(() => {
+    if (
+      authSessaoRef.current.token !== token ||
+      authSessaoRef.current.idUsuario !== usuario?.id
+    ) {
+      authSessaoRef.current = {
+        token,
+        idUsuario: usuario?.id,
+        geracao: authSessaoRef.current.geracao + 1,
+      };
+    }
+  }, [token, usuario?.id]);
 
   const estado = useSyncExternalStore(
     controlador.subscribe,
@@ -45,6 +62,7 @@ export function PlayerProvider({ children }) {
    */
   const tocarAmbiente = useCallback(
     async (ambienteOuId) => {
+      const sessaoAoIniciar = authSessaoRef.current;
       setErroAmbiente("");
       let amb = ambienteOuId;
 
@@ -109,7 +127,20 @@ export function PlayerProvider({ children }) {
 
       const audiosComposicao = Array.isArray(amb?.audios) ? amb.audios : [];
       if (audiosComposicao.length > 0) {
-        await controlador.reproduzirComposicao(audiosComposicao);
+        await iniciarReproducaoComHistorico({
+          iniciar: () => controlador.reproduzirComposicao(audiosComposicao),
+          registrar: (tokenAcesso, idAmbienteSonoro) =>
+            historicoReproducaoService.registrar(tokenAcesso, idAmbienteSonoro),
+          token: sessaoAoIniciar.token,
+          idAmbienteSonoro: amb.idAmbienteSonoro,
+          chaveSessao: sessaoAoIniciar.geracao,
+          sessaoVigente: () =>
+            authSessaoRef.current.geracao === sessaoAoIniciar.geracao &&
+            authSessaoRef.current.token === sessaoAoIniciar.token &&
+            authSessaoRef.current.idUsuario === sessaoAoIniciar.idUsuario &&
+            Boolean(sessaoAoIniciar.idUsuario),
+          registrosPendentes: registrosPendentesRef.current,
+        });
       }
 
       return amb;
