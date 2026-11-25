@@ -11,7 +11,10 @@ import Player from "../components/player/Player";
 import { ambienteService, audioService } from "../services/sons.service.js";
 import { categoriasService } from "../services/categorias.service.js";
 import { useReprodutor } from "../hooks/useReprodutor.js";
-import { filtrarPorCategoria, obterCategoriasAtivas } from "../utils/catalogo.js";
+import {
+  filtrarPorCategoria,
+  obterCategoriasAtivas,
+} from "../utils/catalogo.js";
 import { obterCorCategoria } from "../utils/cor-categoria.js";
 
 export default function Home() {
@@ -67,11 +70,15 @@ export default function Home() {
           setFiltroSons((atual) => (nomes.includes(atual) ? atual : "Todos"));
         } else {
           setCategoriasAmbiente(nomes);
-          setFiltroAmbientes((atual) => (nomes.includes(atual) ? atual : "Todos"));
+          setFiltroAmbientes((atual) =>
+            nomes.includes(atual) ? atual : "Todos",
+          );
         }
       } catch (falha) {
         if (ativo && requisicaoAtual === requisicao) {
-          setErroCategorias(falha.message || "Não foi possível carregar as categorias.");
+          setErroCategorias(
+            falha.message || "Não foi possível carregar as categorias.",
+          );
         }
       } finally {
         if (ativo && requisicaoAtual === requisicao) {
@@ -113,7 +120,9 @@ export default function Home() {
               typeof audio.arquivo === "string",
           )
         ) {
-          throw new Error("A resposta da API não contém uma lista válida de áudios.");
+          throw new Error(
+            "A resposta da API não contém uma lista válida de áudios.",
+          );
         }
         if (!ativo || requisicaoAtual !== requisicao) return;
 
@@ -123,7 +132,9 @@ export default function Home() {
         if (ativo && requisicaoAtual === requisicao) {
           setAudios([]);
           sincronizarAudios([]);
-          setErroAudios(falha.message || "Não foi possível carregar os áudios.");
+          setErroAudios(
+            falha.message || "Não foi possível carregar os áudios.",
+          );
         }
       } finally {
         if (ativo && requisicaoAtual === requisicao) setCarregandoAudios(false);
@@ -163,17 +174,22 @@ export default function Home() {
               Array.isArray(ambiente.audios),
           )
         ) {
-          throw new Error("A resposta da API não contém uma lista válida de ambientes.");
+          throw new Error(
+            "A resposta da API não contém uma lista válida de ambientes.",
+          );
         }
         if (!ativo || requisicaoAtual !== requisicao) return;
         setAmbientesPublicos(resposta.ambientes);
       } catch (falha) {
         if (ativo && requisicaoAtual === requisicao) {
           setAmbientesPublicos([]);
-          setErroAmbientes(falha.message || "Não foi possível carregar os ambientes.");
+          setErroAmbientes(
+            falha.message || "Não foi possível carregar os ambientes.",
+          );
         }
       } finally {
-        if (ativo && requisicaoAtual === requisicao) setCarregandoAmbientes(false);
+        if (ativo && requisicaoAtual === requisicao)
+          setCarregandoAmbientes(false);
       }
     }
 
@@ -237,11 +253,11 @@ export default function Home() {
         >
           <div className="text-center">
             <h1 className="text-[52px] font-light leading-none tracking-[-0.05em] md:text-[72px]">
-              Sons
+              Experimente os sons
             </h1>
             <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-fg-2">
-              Customize seu próprio ambiente sonoro com diferentes opções de
-              sons.
+              Explore, combine e personalize sons à sua maneira. Crie sua conta
+              para aproveitar a experiência completa do Sonessia.
             </p>
           </div>
 
@@ -257,8 +273,13 @@ export default function Home() {
             </p>
           )}
           {erroCategorias && (
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-center text-xs text-rose-700 dark:text-rose-300" role="alert">
-              <span>Não foi possível atualizar as categorias: {erroCategorias}</span>
+            <div
+              className="mt-3 flex flex-wrap items-center justify-center gap-2 text-center text-xs text-rose-700 dark:text-rose-300"
+              role="alert"
+            >
+              <span>
+                Não foi possível atualizar as categorias: {erroCategorias}
+              </span>
               <button
                 type="button"
                 onClick={() => setVersaoCategorias((atual) => atual + 1)}
@@ -284,7 +305,10 @@ export default function Home() {
             </p>
           )}
           {erroAudios && (
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-2 text-center text-sm text-rose-700 dark:text-rose-300" role="alert">
+            <div
+              className="mt-10 flex flex-wrap items-center justify-center gap-2 text-center text-sm text-rose-700 dark:text-rose-300"
+              role="alert"
+            >
               <span>Não foi possível carregar os áudios: {erroAudios}</span>
               <button
                 type="button"
@@ -365,8 +389,13 @@ export default function Home() {
             </p>
           )}
           {erroCategorias && (
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-center text-xs text-rose-700 dark:text-rose-300" role="alert">
-              <span>Não foi possível atualizar as categorias: {erroCategorias}</span>
+            <div
+              className="mt-3 flex flex-wrap items-center justify-center gap-2 text-center text-xs text-rose-700 dark:text-rose-300"
+              role="alert"
+            >
+              <span>
+                Não foi possível atualizar as categorias: {erroCategorias}
+              </span>
               <button
                 type="button"
                 onClick={() => setVersaoCategorias((atual) => atual + 1)}
@@ -383,8 +412,13 @@ export default function Home() {
             </p>
           )}
           {erroAmbientes && (
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-2 text-center text-sm text-rose-700 dark:text-rose-300" role="alert">
-              <span>Não foi possível carregar os ambientes: {erroAmbientes}</span>
+            <div
+              className="mt-10 flex flex-wrap items-center justify-center gap-2 text-center text-sm text-rose-700 dark:text-rose-300"
+              role="alert"
+            >
+              <span>
+                Não foi possível carregar os ambientes: {erroAmbientes}
+              </span>
               <button
                 type="button"
                 onClick={() => setVersaoAmbientes((atual) => atual + 1)}

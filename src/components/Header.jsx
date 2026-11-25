@@ -2,7 +2,7 @@ import { Moon, Sun } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const abas = [
-  { id: "sons", nome: "Criar ambiente" },
+  { id: "sons", nome: "Experimentar sons" },
   { id: "ambientes", nome: "Ambientes prontos" },
 ];
 
@@ -102,7 +102,7 @@ export default function Header({
           >
             Criar conta
           </Link>
-          
+
           <button
             type="button"
             onClick={onAlternarTema}
