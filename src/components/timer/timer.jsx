@@ -11,13 +11,11 @@ export function TimerControl({ timer }) {
   const [minutos, setMinutos] = useState(0);
   const [pausa, setPausa] = useState(5);
   const [quantidade, setQuantidade] = useState(3);
-  const [aviso, setAviso] = useState("bell");
 
   const ativo = Boolean(timer.session);
 
   function iniciar() {
     const config = {
-      alert: aviso,
       mode: modo,
     };
 
@@ -40,10 +38,8 @@ export function TimerControl({ timer }) {
         onClick={() => setAberto((atual) => !atual)}
         aria-label="Abrir temporizador"
         aria-expanded={aberto}
-        className={`grid size-12 place-items-center rounded-xl transition-colors ${
-          aberto || ativo
-            ? "bg-accent-soft text-accent"
-            : "text-fg-2 hover:bg-surface-hover"
+        className={`player-side-control grid size-[52px] place-items-center rounded-full transition-all ${
+          aberto || ativo ? "is-active" : ""
         }`}
       >
         <TimerIcon size={19} strokeWidth={1.6} />
@@ -59,7 +55,7 @@ export function TimerControl({ timer }) {
           />
 
           <div className="absolute left-1/2 top-[calc(100%+12px)] z-50 w-[min(356px,calc(100vw-32px))] -translate-x-1/2 rounded-xl border border-line bg-surface p-4 shadow-xl sm:w-[374px]">
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-3 flex items-center justify-between">
               <h3 className="text-[15px] font-medium text-fg">Temporizador</h3>
 
               {ativo && (
@@ -123,7 +119,7 @@ export function TimerControl({ timer }) {
 
                 {modo !== "none" && (
                   <>
-                    <p className="mb-2 mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-fg-3">
+                    <p className="mb-2 mt-4 font-mono text-[10px] uppercase tracking-[0.16em] text-fg-3">
                       {modo === "end"
                         ? "Encerrar depois de"
                         : "Duração de cada ciclo"}
@@ -189,7 +185,7 @@ export function TimerControl({ timer }) {
                     )}
 
                     {modo === "cycles" && (
-                      <div className="mt-4 grid grid-cols-2 gap-3">
+                      <div className="mt-3 grid grid-cols-2 gap-3">
                         <label className="text-xs text-fg-2">
                           Pausa (min)
                           <input
@@ -217,37 +213,6 @@ export function TimerControl({ timer }) {
                   </>
                 )}
 
-                <p className="mb-2 mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-fg-3">
-                  Avisos
-                </p>
-
-                <div className="grid grid-cols-3 rounded-xl bg-bg-2 p-1">
-                  {[
-                    ["none", "Nenhum"],
-                    ["bell", "Sino suave"],
-                    ["voice", "Voz"],
-                  ].map(([valor, texto]) => (
-                    <button
-                      key={valor}
-                      type="button"
-                      onClick={() => setAviso(valor)}
-                      className={`rounded-lg py-2 text-xs ${
-                        aviso === valor
-                          ? "bg-accent text-on-accent shadow-sm"
-                          : "text-fg-2 hover:text-fg"
-                      }`}
-                    >
-                      {texto}
-                    </button>
-                  ))}
-                </div>
-
-                <p className="mt-2 text-xs text-fg-3">
-                  {aviso === "none"
-                    ? "Nenhum aviso será emitido."
-                    : "O aviso será visual nesta versão, sem áudio."}
-                </p>
-
                 <button
                   type="button"
                   disabled={
@@ -255,7 +220,7 @@ export function TimerControl({ timer }) {
                     (personalizado && horas === 0 && minutos === 0)
                   }
                   onClick={iniciar}
-                  className="mt-5 w-full rounded-[10px] bg-accent py-3 text-sm font-semibold text-on-accent lift transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-4 w-full rounded-[10px] bg-accent py-3 text-sm font-semibold text-on-accent lift transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Iniciar temporizador
                 </button>

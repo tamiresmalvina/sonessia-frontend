@@ -324,6 +324,44 @@
     0 1px 0 rgba(255, 255, 255, 0.35) inset,
     0 10px 24px -12px var(--violet);
 }
+.player-main-control {
+  color: var(--on-accent);
+  background: var(--audio);
+  border: 1px solid transparent;
+  box-shadow: 0 10px 24px -12px var(--violet);
+}
+.player-main-control:hover {
+  filter: brightness(1.1);
+}
+.player-main-control:active {
+  filter: brightness(0.96);
+}
+.player-side-control {
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--lift);
+}
+.player-side-control:hover,
+.player-side-control:active,
+.player-side-control.is-active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+}
+.dark .player-side-control {
+  color: var(--icon-2);
+  background: var(--surface-selected);
+  border-color: var(--border-subtle);
+  box-shadow: none;
+}
+.dark .player-side-control:hover,
+.dark .player-side-control:active,
+.dark .player-side-control.is-active {
+  color: var(--violet);
+  background: var(--surface-hover);
+  border-color: var(--accent-border);
+}
 .lift {
   box-shadow: var(--lift);
 }

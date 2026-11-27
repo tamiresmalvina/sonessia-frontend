@@ -38,26 +38,40 @@ function OndasDecorativas() {
       className="pointer-events-none absolute inset-x-0 bottom-0 top-16 overflow-hidden select-none"
     >
       <svg
-        className="absolute inset-x-0 bottom-0 h-[58%] w-full opacity-60 transition-opacity duration-500 md:h-[68%] dark:opacity-30"
+        className="absolute inset-x-0 bottom-0 h-[76%] w-full opacity-60 transition-opacity duration-500 md:h-[82%] dark:opacity-30"
         viewBox="0 0 1440 600"
         fill="none"
         preserveAspectRatio="none"
       >
         <path
-          d="M0 320C240 230 480 390 720 330C960 270 1200 180 1440 260V600H0V320Z"
+          d="M0 210C240 120 480 280 720 220C960 160 1200 70 1440 150V600H0V210Z"
           fill="url(#gradiente-ondas-1)"
         />
         <path
-          d="M0 400C300 320 600 480 900 420C1140 372 1320 330 1440 360V600H0V400Z"
+          d="M0 300C300 220 600 380 900 320C1140 272 1320 230 1440 260V600H0V300Z"
           fill="url(#gradiente-ondas-2)"
         />
         <defs>
-          <linearGradient id="gradiente-ondas-1" x1="0" y1="0" x2="1440" y2="600" gradientUnits="userSpaceOnUse">
+          <linearGradient
+            id="gradiente-ondas-1"
+            x1="0"
+            y1="0"
+            x2="1440"
+            y2="600"
+            gradientUnits="userSpaceOnUse"
+          >
             <stop offset="0%" stopColor="#7656A8" stopOpacity="0.14" />
             <stop offset="50%" stopColor="#6474C8" stopOpacity="0.10" />
             <stop offset="100%" stopColor="#8A5FC7" stopOpacity="0.16" />
           </linearGradient>
-          <linearGradient id="gradiente-ondas-2" x1="1440" y1="100" x2="0" y2="600" gradientUnits="userSpaceOnUse">
+          <linearGradient
+            id="gradiente-ondas-2"
+            x1="1440"
+            y1="100"
+            x2="0"
+            y2="600"
+            gradientUnits="userSpaceOnUse"
+          >
             <stop offset="0%" stopColor="#6474C8" stopOpacity="0.12" />
             <stop offset="50%" stopColor="#7656A8" stopOpacity="0.08" />
             <stop offset="100%" stopColor="#C875A8" stopOpacity="0.10" />
@@ -105,7 +119,10 @@ function ModalSonsUtilizados({ aberto, aoFechar, ambiente }) {
       >
         <div className="flex items-start justify-between gap-4 border-b border-line-subtle pb-4">
           <div>
-            <h2 id="titulo-modal-sons" className="text-lg font-semibold tracking-[-0.01em] text-fg">
+            <h2
+              id="titulo-modal-sons"
+              className="text-lg font-semibold tracking-[-0.01em] text-fg"
+            >
               Sons utilizados
             </h2>
             <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.16em] text-accent">
@@ -130,9 +147,13 @@ function ModalSonsUtilizados({ aberto, aoFechar, ambiente }) {
             </p>
           ) : (
             audios.map((item, index) => {
-              const titulo = item.titulo || item.audio?.titulo || `Som ${index + 1}`;
+              const titulo =
+                item.titulo || item.audio?.titulo || `Som ${index + 1}`;
               const categoria = item.categoria || item.audio?.categoria;
-              const volume = typeof item.volume === "number" ? Math.max(0, Math.min(100, item.volume)) : 0;
+              const volume =
+                typeof item.volume === "number"
+                  ? Math.max(0, Math.min(100, item.volume))
+                  : 0;
 
               return (
                 <div
@@ -201,13 +222,14 @@ export default function TelaPlayer() {
     encerrarReproducao,
   } = usePlayer();
 
-  const jaEstaTocandoEsteAmbiente = ambienteAtual?.idAmbienteSonoro === idAmbienteSonoro;
+  const jaEstaTocandoEsteAmbiente =
+    ambienteAtual?.idAmbienteSonoro === idAmbienteSonoro;
 
   const [temaEscuro, setTemaEscuro] = useState(() => {
     return localStorage.getItem("sonessia-theme") === "dark";
   });
-  const [ambiente, setAmbiente] = useState(
-    () => (jaEstaTocandoEsteAmbiente ? ambienteAtual : null),
+  const [ambiente, setAmbiente] = useState(() =>
+    jaEstaTocandoEsteAmbiente ? ambienteAtual : null,
   );
   const [carregando, setCarregando] = useState(
     () => !jaEstaTocandoEsteAmbiente,
@@ -251,17 +273,24 @@ export default function TelaPlayer() {
         let resposta = null;
         if (token) {
           try {
-            resposta = await ambienteService.obterAmbiente(token, idAmbienteSonoro);
+            resposta = await ambienteService.obterAmbiente(
+              token,
+              idAmbienteSonoro,
+            );
           } catch {
             // Se não for ambiente personalizado, busca na pública
           }
         }
 
         if (!resposta?.ambiente) {
-          resposta = await ambienteService.obterAmbientePublico(idAmbienteSonoro);
+          resposta =
+            await ambienteService.obterAmbientePublico(idAmbienteSonoro);
         }
 
-        if (!resposta?.ambiente || typeof resposta.ambiente.idAmbienteSonoro !== "string") {
+        if (
+          !resposta?.ambiente ||
+          typeof resposta.ambiente.idAmbienteSonoro !== "string"
+        ) {
           throw new Error("Os dados do ambiente não puderam ser recuperados.");
         }
         if (!ativo) return;
@@ -288,7 +317,7 @@ export default function TelaPlayer() {
         encerrarReproducao();
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idAmbienteSonoro, token, autenticado]);
 
   // Fechamento de popup de volume
@@ -369,8 +398,13 @@ export default function TelaPlayer() {
             onClick={navegarVolta}
             className="group inline-flex items-center gap-1.5 rounded-md px-1 py-1 text-[13px] font-normal text-fg-2 transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
           >
-            <ChevronLeft size={16} className="transition-transform group-hover:-translate-x-0.5" />
-            <span>{autenticado ? "Voltar para minha área" : "Ambientes prontos"}</span>
+            <ChevronLeft
+              size={16}
+              className="transition-transform group-hover:-translate-x-0.5"
+            />
+            <span>
+              {autenticado ? "Voltar para minha área" : "Ambientes prontos"}
+            </span>
           </button>
         </div>
 
@@ -394,7 +428,8 @@ export default function TelaPlayer() {
               Ambiente não encontrado
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-fg-2">
-              {erro || "O ambiente sonoro solicitado não existe ou não está mais disponível publicamente."}
+              {erro ||
+                "O ambiente sonoro solicitado não existe ou não está mais disponível publicamente."}
             </p>
             <button
               type="button"
@@ -402,7 +437,11 @@ export default function TelaPlayer() {
               className="mt-6 inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             >
               <ArrowLeft size={16} />
-              <span>{autenticado ? "Voltar para minha área" : "Voltar para ambientes prontos"}</span>
+              <span>
+                {autenticado
+                  ? "Voltar para minha área"
+                  : "Voltar para ambientes prontos"}
+              </span>
             </button>
           </div>
         )}
@@ -413,7 +452,11 @@ export default function TelaPlayer() {
             {/* Status: Equalizador e Tempo Decorrido */}
             <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-fg-3">
               <Equalizador animando={tocando} />
-              <span>{tocando ? `Reproduzindo · ${tempoFormatado}` : `Pausado em ${tempoFormatado}`}</span>
+              <span>
+                {tocando
+                  ? `Reproduzindo · ${tempoFormatado}`
+                  : `Pausado em ${tempoFormatado}`}
+              </span>
             </div>
 
             {/* Título Principal */}
@@ -443,7 +486,9 @@ export default function TelaPlayer() {
                 type="button"
                 onClick={() => void reproduzirPausar()}
                 disabled={audios.length === 0}
-                aria-label={tocando ? "Pausar reprodução" : "Iniciar reprodução"}
+                aria-label={
+                  tocando ? "Pausar reprodução" : "Iniciar reprodução"
+                }
                 className="play grid size-[72px] shrink-0 place-items-center rounded-full text-white transition-all duration-200 hover:scale-[1.05] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {tocando ? (
@@ -465,10 +510,8 @@ export default function TelaPlayer() {
                   onClick={() => setVolumeAberto((atual) => !atual)}
                   aria-label="Controle de volume geral"
                   aria-expanded={volumeAberto}
-                  className={`grid size-12 place-items-center rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus ${
-                    volumeAberto
-                      ? "bg-accent text-on-accent"
-                      : "bg-[#EFEAF9] text-accent hover:bg-[#E4DCF5] dark:bg-[#252447] dark:text-[#9A72D8] dark:hover:bg-[#302E5C]"
+                  className={`player-side-control grid size-[52px] place-items-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus ${
+                    volumeAberto ? "is-active" : ""
                   }`}
                 >
                   {somMutado ? (
@@ -500,10 +543,16 @@ export default function TelaPlayer() {
                       <button
                         type="button"
                         onClick={() => definirVolumeGeral(somMutado ? 100 : 0)}
-                        aria-label={somMutado ? "Reativar áudio" : "Silenciar áudio"}
+                        aria-label={
+                          somMutado ? "Reativar áudio" : "Silenciar áudio"
+                        }
                         className="text-fg-2 transition-colors hover:text-fg"
                       >
-                        {somMutado ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                        {somMutado ? (
+                          <VolumeX size={18} />
+                        ) : (
+                          <Volume2 size={18} />
+                        )}
                       </button>
 
                       <input
@@ -511,7 +560,9 @@ export default function TelaPlayer() {
                         min="0"
                         max="100"
                         value={volumeGeral}
-                        onChange={(e) => definirVolumeGeral(Number(e.target.value))}
+                        onChange={(e) =>
+                          definirVolumeGeral(Number(e.target.value))
+                        }
                         aria-label="Controle deslizante de volume geral"
                         className="vol"
                         style={{ "--v": `${volumeGeral}%` }}
@@ -554,7 +605,11 @@ export default function TelaPlayer() {
                   />
                 ) : (
                   <div className="grid size-full place-items-center text-icon-muted">
-                    <AudioLines size={24} strokeWidth={1.4} aria-hidden="true" />
+                    <AudioLines
+                      size={24}
+                      strokeWidth={1.4}
+                      aria-hidden="true"
+                    />
                   </div>
                 )}
               </div>
@@ -564,7 +619,8 @@ export default function TelaPlayer() {
                   {ambiente.nome}
                 </h2>
                 <p className="mt-0.5 truncate font-mono text-[10px] uppercase tracking-[0.16em] text-accent">
-                  {ambiente.categoria || ambiente.finalidade} · {audios.length} {audios.length === 1 ? "SOM" : "SONS"}
+                  {ambiente.categoria || ambiente.finalidade} · {audios.length}{" "}
+                  {audios.length === 1 ? "SOM" : "SONS"}
                 </p>
                 <button
                   type="button"
