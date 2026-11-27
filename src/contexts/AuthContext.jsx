@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { AuthContext } from "./AuthContextInstance.js";
 import { authService } from "../services/auth.service.js";
 import { obterPrazoSaidaEmail } from "../utils/emailAlteradoSuccess.js";
+import { obterEsperaLogoutExclusao } from "../utils/exclusaoContaSuccess.js";
 
 const CHAVE_STORAGE_TOKEN = "sonessia_token";
 const CHAVE_STORAGE_USUARIO = "sonessia_usuario";
@@ -84,6 +85,11 @@ export function AuthProvider({ children }) {
     let ativo = true;
 
     async function validarOuRestaurarSessao() {
+      if (obterEsperaLogoutExclusao()) {
+        setCarregando(false);
+        return;
+      }
+
       if (obterPrazoSaidaEmail() !== null) {
         limparAutenticacao();
         usuarioRef.current = null;

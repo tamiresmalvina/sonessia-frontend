@@ -52,6 +52,49 @@ test('authService.login envia dados corretos e formato esperado para o backend',
   assert.equal(resultado.usuario.perfil, 'ADMIN');
 });
 
+test('authService solicitarExclusaoConta usa DELETE autenticado com confirmação literal', async () => {
+  let urlChamada = '';
+  let opcoesChamada = {};
+  globalThis.fetch = async (url, opcoes) => {
+    urlChamada = url;
+    opcoesChamada = opcoes;
+    return {
+      ok: true, status: 202,
+      headers: { get: () => 'application/json' },
+      json: async () => ({ exclusaoDefinitivaEm: '2026-12-27T14:30:00.000Z' }),
+    };
+  };
+  const { authService } = await import('../services/auth.service.js');
+  const resposta = await authService.solicitarExclusaoConta('jwt-teste', 'Senha@123');
+  assert.equal(urlChamada, 'http://localhost:3000/autenticacao/eu');
+  assert.equal(opcoesChamada.method, 'DELETE');
+  assert.equal(opcoesChamada.headers.Authorization, 'Bearer jwt-teste');
+  assert.deepEqual(JSON.parse(opcoesChamada.body), {
+    senhaAtual: 'Senha@123', confirmacao: 'EXCLUIR_CONTA',
+  });
+  assert.equal(resposta.exclusaoDefinitivaEm, '2026-12-27T14:30:00.000Z');
+});
+
+test('authService reativarConta envia e-mail e senha sem criar sessão local', async () => {
+  let urlChamada = '';
+  let opcoesChamada = {};
+  globalThis.fetch = async (url, opcoes) => {
+    urlChamada = url;
+    opcoesChamada = opcoes;
+    return {
+      ok: true, status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => ({ mensagem: 'Se os dados corresponderem, a solicitação será processada.' }),
+    };
+  };
+  const { authService } = await import('../services/auth.service.js');
+  const resposta = await authService.reativarConta('pessoa@sonessia.com', 'Senha@123');
+  assert.equal(urlChamada, 'http://localhost:3000/autenticacao/reativar-conta');
+  assert.equal(opcoesChamada.method, 'POST');
+  assert.deepEqual(JSON.parse(opcoesChamada.body), { email: 'pessoa@sonessia.com', senha: 'Senha@123' });
+  assert.match(resposta.mensagem, /solicita/i);
+});
+
 test('authService.login com lembrarMe desmarcado envia lembrarMe: false', async () => {
   let corpoEnviado = {};
 

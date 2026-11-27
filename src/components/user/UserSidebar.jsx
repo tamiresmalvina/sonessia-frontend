@@ -128,10 +128,9 @@ const GRUPO_PERFIL = [
   },
   {
     nome: "Excluir conta",
-    rota: "#excluir-conta",
+    rota: "/comum/excluir-conta",
     icone: Trash2,
-    ativo: false,
-    emBreve: true,
+    ativo: true,
   },
 ];
 

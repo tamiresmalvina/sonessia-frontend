@@ -27,12 +27,19 @@ import UserColecaoDetalhes from "../pages/user/UserColecaoDetalhes";
 import UserSenha from "../pages/user/UserSenha";
 import UserPerfil from "../pages/user/UserPerfil";
 import UserEmail from "../pages/user/UserEmail.jsx";
+import UserExcluirConta from "../pages/user/UserExcluirConta.jsx";
 import EmailAlterado from "../pages/EmailAlterado.jsx";
+import ExclusaoContaConfirmada from "../pages/ExclusaoContaConfirmada.jsx";
 import { assinarPrazoSaidaEmail, obterMarcadorPrazoSaidaEmail } from "../utils/emailAlteradoSuccess.js";
+import { assinarEsperaLogoutExclusao, obterMarcadorEsperaLogoutExclusao } from "../utils/exclusaoContaSuccess.js";
 
-function ProtegerSucessoEmail({ children }) {
+function ProtegerEstadoSaida({ children }) {
   const location = useLocation();
   const marcadorSaida = useSyncExternalStore(assinarPrazoSaidaEmail, obterMarcadorPrazoSaidaEmail, () => "");
+  const marcadorExclusao = useSyncExternalStore(assinarEsperaLogoutExclusao, obterMarcadorEsperaLogoutExclusao, () => "");
+  if (marcadorExclusao && location.pathname !== "/exclusao-conta-confirmada") {
+    return <Navigate to="/exclusao-conta-confirmada" replace />;
+  }
   if (marcadorSaida && location.pathname !== "/email-alterado") {
     return <Navigate to="/email-alterado" replace state={location.state} />;
   }
@@ -42,7 +49,7 @@ function ProtegerSucessoEmail({ children }) {
 export default function AppRoutes() {
   return (
     <BrowserRouter>
-      <ProtegerSucessoEmail>
+      <ProtegerEstadoSaida>
         <Routes>
           {/* Rotas Públicas */}
           <Route path="/" element={<Home />} />
@@ -50,6 +57,7 @@ export default function AppRoutes() {
           <Route path="/ambientes/:idAmbienteSonoro" element={<TelaPlayer />} />
           <Route path="/login" element={<Login />} />
           <Route path="/email-alterado" element={<EmailAlterado />} />
+          <Route path="/exclusao-conta-confirmada" element={<ExclusaoContaConfirmada />} />
           <Route path="/cadastro" element={<Cadastro />} />
           <Route path="/confirmar-email" element={<ConfirmarEmail />} />
           <Route path="/recuperar-senha" element={<RecuperarSenha />} />
@@ -64,6 +72,7 @@ export default function AppRoutes() {
               <Route path="perfil" element={<UserPerfil />} />
               <Route path="email" element={<UserEmail />} />
               <Route path="senha" element={<UserSenha />} />
+              <Route path="excluir-conta" element={<UserExcluirConta />} />
               <Route
                 path="colecoes/:idColecao"
                 element={<UserColecaoDetalhes />}
@@ -87,7 +96,7 @@ export default function AppRoutes() {
           {/* Rota padrão para rotas não mapeadas */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </ProtegerSucessoEmail>
+      </ProtegerEstadoSaida>
     </BrowserRouter>
   );
 }

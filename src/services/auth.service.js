@@ -145,6 +145,21 @@ export const authService = {
     });
   },
 
+  async solicitarExclusaoConta(tokenAcesso, senhaAtual) {
+    return requisicaoApi("/autenticacao/eu", {
+      method: "DELETE",
+      headers: cabecalhosAutenticados(tokenAcesso),
+      body: JSON.stringify({ senhaAtual, confirmacao: "EXCLUIR_CONTA" }),
+    });
+  },
+
+  async reativarConta(email, senha) {
+    return requisicaoApi("/autenticacao/reativar-conta", {
+      method: "POST",
+      body: JSON.stringify({ email, senha }),
+    });
+  },
+
   /**
    * Renova a sessão e o token de acesso utilizando o cookie de refresh token.
    * Endpoint: POST /autenticacao/renovar-sessao
