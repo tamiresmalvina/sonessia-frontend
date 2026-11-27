@@ -66,6 +66,8 @@
     --accent-border: #c2b2e0;
     --on-accent: #ffffff;
     --focus: #6474c8;
+    --danger: #a8434b;
+    --danger-soft: #fbf3f3;
     --violet: #8a5fc7;
     --indigo: #6474c8;
     --blue: #536dcb;
@@ -110,6 +112,8 @@
     --accent-border: #5d4f8f;
     --on-accent: #0f1020;
     --focus: #7185e2;
+    --danger: #e0959a;
+    --danger-soft: #2a1d20;
     --violet: #b078e3;
     --indigo: #7185e2;
     --blue: #6387e8;
