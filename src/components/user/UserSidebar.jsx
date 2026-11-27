@@ -116,10 +116,9 @@ const GRUPO_PERFIL = [
   },
   {
     nome: "E-mail",
-    rota: "#email",
+    rota: "/comum/email",
     icone: Mail,
-    ativo: false,
-    emBreve: true,
+    ativo: true,
   },
   {
     nome: "Senha",

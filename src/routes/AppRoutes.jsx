@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useSyncExternalStore } from "react";
 
 import Home from "../pages/Home";
 import TelaPlayer from "../pages/TelaPlayer";
@@ -25,52 +26,68 @@ import UserColecoes from "../pages/user/UserColecoes";
 import UserColecaoDetalhes from "../pages/user/UserColecaoDetalhes";
 import UserSenha from "../pages/user/UserSenha";
 import UserPerfil from "../pages/user/UserPerfil";
+import UserEmail from "../pages/user/UserEmail.jsx";
+import EmailAlterado from "../pages/EmailAlterado.jsx";
+import { assinarPrazoSaidaEmail, obterMarcadorPrazoSaidaEmail } from "../utils/emailAlteradoSuccess.js";
+
+function ProtegerSucessoEmail({ children }) {
+  const location = useLocation();
+  const marcadorSaida = useSyncExternalStore(assinarPrazoSaidaEmail, obterMarcadorPrazoSaidaEmail, () => "");
+  if (marcadorSaida && location.pathname !== "/email-alterado") {
+    return <Navigate to="/email-alterado" replace state={location.state} />;
+  }
+  return children;
+}
 
 export default function AppRoutes() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Rotas Públicas */}
-        <Route path="/" element={<Home />} />
-        <Route path="/player/:idAmbienteSonoro" element={<TelaPlayer />} />
-        <Route path="/ambientes/:idAmbienteSonoro" element={<TelaPlayer />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/cadastro" element={<Cadastro />} />
-        <Route path="/confirmar-email" element={<ConfirmarEmail />} />
-        <Route path="/recuperar-senha" element={<RecuperarSenha />} />
-        <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+      <ProtegerSucessoEmail>
+        <Routes>
+          {/* Rotas Públicas */}
+          <Route path="/" element={<Home />} />
+          <Route path="/player/:idAmbienteSonoro" element={<TelaPlayer />} />
+          <Route path="/ambientes/:idAmbienteSonoro" element={<TelaPlayer />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/email-alterado" element={<EmailAlterado />} />
+          <Route path="/cadastro" element={<Cadastro />} />
+          <Route path="/confirmar-email" element={<ConfirmarEmail />} />
+          <Route path="/recuperar-senha" element={<RecuperarSenha />} />
+          <Route path="/redefinir-senha" element={<RedefinirSenha />} />
 
-        {/* Rotas da Área do Usuário — Acesso exclusivo perfil COMUM */}
-        <Route element={<ProtectedRoute perfilExigido="COMUM" />}>
-          <Route path="/comum" element={<UserLayout />}>
-            <Route index element={<UserHome />} />
-            <Route path="ambientes" element={<UserAmbientes />} />
-            <Route path="colecoes" element={<UserColecoes />} />
-            <Route path="perfil" element={<UserPerfil />} />
-            <Route path="senha" element={<UserSenha />} />
-            <Route
-              path="colecoes/:idColecao"
-              element={<UserColecaoDetalhes />}
-            />
+          {/* Rotas da Área do Usuário — Acesso exclusivo perfil COMUM */}
+          <Route element={<ProtectedRoute perfilExigido="COMUM" />}>
+            <Route path="/comum" element={<UserLayout />}>
+              <Route index element={<UserHome />} />
+              <Route path="ambientes" element={<UserAmbientes />} />
+              <Route path="colecoes" element={<UserColecoes />} />
+              <Route path="perfil" element={<UserPerfil />} />
+              <Route path="email" element={<UserEmail />} />
+              <Route path="senha" element={<UserSenha />} />
+              <Route
+                path="colecoes/:idColecao"
+                element={<UserColecaoDetalhes />}
+              />
+            </Route>
+            <Route path="/app" element={<Navigate to="/comum" replace />} />
+            <Route path="/inicio" element={<Navigate to="/comum" replace />} />
           </Route>
-          <Route path="/app" element={<Navigate to="/comum" replace />} />
-          <Route path="/inicio" element={<Navigate to="/comum" replace />} />
-        </Route>
 
-        {/* Rotas Administrativas — Acesso exclusivo perfil ADMIN */}
-        <Route element={<ProtectedRoute perfilExigido="ADMIN" />}>
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="audios" element={<Audios />} />
-            <Route path="ambientes" element={<Ambientes />} />
-            <Route path="categorias" element={<Categorias />} />
-            <Route path="configuracoes" element={<Configuracoes />} />
+          {/* Rotas Administrativas — Acesso exclusivo perfil ADMIN */}
+          <Route element={<ProtectedRoute perfilExigido="ADMIN" />}>
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="audios" element={<Audios />} />
+              <Route path="ambientes" element={<Ambientes />} />
+              <Route path="categorias" element={<Categorias />} />
+              <Route path="configuracoes" element={<Configuracoes />} />
+            </Route>
           </Route>
-        </Route>
 
-        {/* Rota padrão para rotas não mapeadas */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* Rota padrão para rotas não mapeadas */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ProtegerSucessoEmail>
     </BrowserRouter>
   );
 }
