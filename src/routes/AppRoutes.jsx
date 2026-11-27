@@ -24,6 +24,7 @@ import UserAmbientes from "../pages/user/UserAmbientes";
 import UserColecoes from "../pages/user/UserColecoes";
 import UserColecaoDetalhes from "../pages/user/UserColecaoDetalhes";
 import UserSenha from "../pages/user/UserSenha";
+import UserPerfil from "../pages/user/UserPerfil";
 
 export default function AppRoutes() {
   return (
@@ -45,6 +46,7 @@ export default function AppRoutes() {
             <Route index element={<UserHome />} />
             <Route path="ambientes" element={<UserAmbientes />} />
             <Route path="colecoes" element={<UserColecoes />} />
+            <Route path="perfil" element={<UserPerfil />} />
             <Route path="senha" element={<UserSenha />} />
             <Route
               path="colecoes/:idColecao"

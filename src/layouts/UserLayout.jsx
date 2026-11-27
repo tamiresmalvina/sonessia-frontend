@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import { Menu } from "lucide-react";
 import UserSidebar from "../components/user/UserSidebar.jsx";
 import PlayerCompacto from "../components/user/PlayerCompacto.jsx";
+import { ToastProvider } from "../components/user/ui/UserFeedback.jsx";
 
 /**
  * Layout compartilhado para todas as páginas da área autenticada do usuário comum.
@@ -11,6 +12,7 @@ export default function UserLayout() {
   const [menuAberto, setMenuAberto] = useState(false);
 
   return (
+    <ToastProvider>
     <div className="flex min-h-screen w-full bg-bg text-fg">
       {/* Sidebar fixa à esquerda */}
       <UserSidebar
@@ -45,5 +47,6 @@ export default function UserLayout() {
         <PlayerCompacto />
       </div>
     </div>
+    </ToastProvider>
   );
 }

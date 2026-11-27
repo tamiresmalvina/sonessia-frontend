@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth.js";
+import { authService } from "../../services/auth.service.js";
 
 /**
  * Ícone vetorial oficial das 5 barras sonoras do Sonessia com degradê característico.
@@ -109,10 +110,9 @@ const GRUPO_EXPLORAR = [
 const GRUPO_PERFIL = [
   {
     nome: "Perfil",
-    rota: "#perfil",
+    rota: "/comum/perfil",
     icone: User,
-    ativo: false,
-    emBreve: true,
+    ativo: true,
   },
   {
     nome: "E-mail",
@@ -142,7 +142,8 @@ const GRUPO_PERFIL = [
  * @param {{ menuAberto: boolean, onFecharMenu: () => void }} props
  */
 export default function UserSidebar({ menuAberto, onFecharMenu }) {
-  const { usuario, logout } = useAuth();
+  const { usuario, token, logout } = useAuth();
+  const [fotoSidebar, setFotoSidebar] = useState({ caminho: "", url: "" });
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -157,6 +158,27 @@ export default function UserSidebar({ menuAberto, onFecharMenu }) {
     document.documentElement.classList.toggle("dark", temaEscuro);
     localStorage.setItem("sonessia-theme", temaEscuro ? "dark" : "light");
   }, [temaEscuro]);
+
+  useEffect(() => {
+    let ativo = true;
+    let urlTemporaria = "";
+    if (!token || !usuario?.fotoPerfil) {
+      return undefined;
+    }
+    authService.obterFotoPerfil(token).then((imagem) => {
+      if (!ativo) return;
+      urlTemporaria = URL.createObjectURL(imagem);
+      setFotoSidebar({ caminho: usuario.fotoPerfil, url: urlTemporaria });
+    }).catch(() => {
+      if (ativo) setFotoSidebar({ caminho: usuario.fotoPerfil, url: "" });
+    });
+    return () => {
+      ativo = false;
+      if (urlTemporaria) URL.revokeObjectURL(urlTemporaria);
+    };
+  }, [token, usuario?.fotoPerfil]);
+
+  const fotoVisivel = fotoSidebar.caminho === usuario?.fotoPerfil ? fotoSidebar.url : "";
 
   async function handleLogout() {
     try {
@@ -295,26 +317,8 @@ export default function UserSidebar({ menuAberto, onFecharMenu }) {
               {GRUPO_PERFIL.map((item) => {
                 const Icone = item.icone;
 
-                if (item.nome === "Senha") {
-                  const ativa = location.pathname === item.rota;
+                if (item.emBreve) {
                   return (
-                    <NavLink
-                      key={item.nome}
-                      to={item.rota}
-                      onClick={onFecharMenu}
-                      className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors ${
-                        ativa
-                          ? "bg-[#F4F1FA] text-[#7656A8] dark:bg-[#252447] dark:text-[#9A72D8]"
-                          : "text-fg-2 hover:bg-surface-hover hover:text-fg"
-                      }`}
-                    >
-                      <Icone size={18} strokeWidth={1.75} className={`shrink-0 ${ativa ? "text-accent" : "text-icon-muted"}`} />
-                      <span>{item.nome}</span>
-                    </NavLink>
-                  );
-                }
-
-                return (
                   <div
                     key={item.nome}
                     title="Esta seção será implementada na próxima etapa"
@@ -329,6 +333,30 @@ export default function UserSidebar({ menuAberto, onFecharMenu }) {
                       <span>{item.nome}</span>
                     </div>
                   </div>
+                  );
+                }
+
+                return (
+                  <NavLink
+                    key={item.nome}
+                    to={item.rota}
+                    end
+                    onClick={onFecharMenu}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors ${
+                        isActive
+                          ? "bg-[#F4F1FA] text-[#7656A8] dark:bg-[#252447] dark:text-[#9A72D8]"
+                          : "text-fg-2 hover:bg-surface-hover hover:text-fg"
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <Icone size={18} strokeWidth={1.75} className={`shrink-0 ${isActive ? "text-accent" : "text-icon-muted"}`} />
+                        <span>{item.nome}</span>
+                      </>
+                    )}
+                  </NavLink>
                 );
               })}
             </nav>
@@ -340,9 +368,9 @@ export default function UserSidebar({ menuAberto, onFecharMenu }) {
           {/* Informações do usuário logado */}
           <div className="flex items-center gap-3 px-1 py-1">
             <div className="relative size-10 shrink-0 overflow-hidden rounded-full border border-line-subtle bg-accent-soft grid place-items-center text-sm font-semibold text-accent">
-              {usuario?.fotoPerfil ? (
+              {usuario?.fotoPerfil && fotoVisivel ? (
                 <img
-                  src={usuario.fotoPerfil}
+                  src={fotoVisivel}
                   alt={usuario.nome}
                   className="size-full object-cover"
                 />

@@ -57,6 +57,14 @@ export const authService = {
     });
   },
 
+  async atualizarDataNascimento(tokenAcesso, dataNascimento) {
+    return requisicaoApi("/autenticacao/eu/data-nascimento", {
+      method: "PATCH",
+      headers: cabecalhosAutenticados(tokenAcesso),
+      body: JSON.stringify({ dataNascimento }),
+    });
+  },
+
   async obterFotoPerfil(tokenAcesso) {
     return requisicaoApi("/autenticacao/eu/foto-perfil", {
       method: "GET",
