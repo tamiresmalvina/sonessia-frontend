@@ -62,7 +62,7 @@ export const ambienteService = {
    * Endpoint: POST /ambientes-sonoros
    *
    * @param {string} tokenAcesso
-   * @param {{ nome: string, descricao?: string | null, finalidade: string, audios: Array<{ idAudio: string, volume: number }> }} dados
+   * @param {{ nome: string, descricao?: string | null, idCategoria: string, audios: Array<{ idAudio: string, volume: number }> }} dados
    * @returns {Promise<{ mensagem: string, ambienteSonoro: object }>}
    */
   async criarAmbiente(tokenAcesso, dados) {
@@ -76,7 +76,7 @@ export const ambienteService = {
   /**
    * Cria um novo ambiente sonoro com imagem de capa opcional via multipart/form-data.
    * @param {string} tokenAcesso
-   * @param {{ nome: string, descricao?: string | null, finalidade: string, audios: Array }} dados
+   * @param {{ nome: string, descricao?: string | null, idCategoria: string, audios: Array }} dados
    * @param {File | null} arquivoImagem
    */
   async criarAmbienteComImagem(tokenAcesso, dados, arquivoImagem) {
@@ -122,7 +122,7 @@ export const ambienteService = {
    * Endpoint: PATCH /ambientes-sonoros/:idAmbienteSonoro
    * @param {string} tokenAcesso
    * @param {string} idAmbienteSonoro
-   * @param {{ nome?: string, descricao?: string | null, finalidade?: string, audios?: Array<{ idAudio: string, volume: number }> }} dados
+   * @param {{ nome?: string, descricao?: string | null, idCategoria?: string, audios?: Array<{ idAudio: string, volume: number }> }} dados
    * @returns {Promise<{ mensagem: string, ambiente: object }>}
    */
   async atualizarAmbiente(tokenAcesso, idAmbienteSonoro, dados) {
@@ -171,7 +171,7 @@ export const ambienteService = {
 
   async listarAmbientesPreConfigurados(tokenAcesso, filtros = {}) {
     const parametros = new URLSearchParams();
-    if (filtros.finalidade) parametros.set("finalidade", filtros.finalidade);
+    if (filtros.idCategoria) parametros.set("idCategoria", filtros.idCategoria);
     if (typeof filtros.publicado === "boolean") {
       parametros.set("publicado", String(filtros.publicado));
     }

@@ -22,19 +22,9 @@ import { ambienteDuplicado } from "../../utils/ambiente-duplicado.js";
 const CLASSE_CAMPO =
   "w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm text-fg placeholder:text-fg-disabled transition-all focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/20";
 
-const FINALIDADES = [
-  { valor: "ESTUDO", rotulo: "Estudo" },
-  { valor: "RELAXAMENTO", rotulo: "Relaxamento" },
-  { valor: "SONO", rotulo: "Sono" },
-  { valor: "MEDITACAO", rotulo: "Meditação" },
-  { valor: "CONCENTRACAO", rotulo: "Concentração" },
-  { valor: "TRABALHO", rotulo: "Trabalho" },
-];
-
 const FORMULARIO_VAZIO = {
   nome: "",
   descricao: "",
-  finalidade: "RELAXAMENTO",
   idCategoria: "",
   publicado: false,
   imagem: "",
@@ -47,10 +37,6 @@ const FORMULARIO_VAZIO = {
   imagemPrevia: "",
   removerImagem: false,
 };
-
-function rotuloFinalidade(valor) {
-  return FINALIDADES.find((item) => item.valor === valor)?.rotulo || valor;
-}
 
 function Alerta({ tipo, mensagem, onFechar }) {
   if (!mensagem) return null;
@@ -95,9 +81,7 @@ function ModalAmbiente({
 }) {
   const editando = Boolean(ambiente);
   const idsSelecionados = new Set(formulario.audios.map((item) => item.idAudio));
-  const categoriasDisponiveis = categorias.filter(
-    (categoria) => categoria.ativa || categoria.nome === ambiente?.categoria,
-  );
+  const categoriasDisponiveis = categorias.filter((categoria) => categoria.ativa);
 
   function adicionarAudio(idAudio) {
     if (!idAudio || idsSelecionados.has(idAudio)) return;
@@ -177,26 +161,8 @@ function ModalAmbiente({
               />
             </div>
             <div>
-              <label htmlFor="ambiente-finalidade" className="mb-1.5 block text-sm font-medium text-fg">
-                Finalidade
-              </label>
-              <select
-                id="ambiente-finalidade"
-                value={formulario.finalidade}
-                onChange={(evento) => onChange("finalidade", evento.target.value)}
-                required
-                className={CLASSE_CAMPO}
-              >
-                {FINALIDADES.map((finalidade) => (
-                  <option key={finalidade.valor} value={finalidade.valor}>
-                    {finalidade.rotulo}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
               <label htmlFor="ambiente-categoria" className="mb-1.5 block text-sm font-medium text-fg">
-                Categoria <span className="font-normal text-fg-3">(opcional)</span>
+                Categoria
               </label>
               <select
                 id="ambiente-categoria"
@@ -204,7 +170,7 @@ function ModalAmbiente({
                 onChange={(evento) => onChange("idCategoria", evento.target.value)}
                 className={CLASSE_CAMPO}
               >
-                <option value="">Sem categoria</option>
+                <option value="" disabled>Selecione uma categoria</option>
                 {categoriasDisponiveis.map((categoria) => (
                   <option key={categoria.idCategoria} value={categoria.idCategoria}>
                     {categoria.nome}{categoria.ativa ? "" : " (inativa)"}
@@ -504,7 +470,6 @@ export default function Ambientes() {
       setFormulario({
         nome: dados.nome || "",
         descricao: dados.descricao || "",
-        finalidade: dados.finalidade || "RELAXAMENTO",
         idCategoria: dados.idCategoria || "",
         publicado: Boolean(dados.publicado),
         imagem: dados.imagem || "",
@@ -599,8 +564,7 @@ export default function Ambientes() {
     const dados = {
       nome: formulario.nome.trim(),
       descricao: opcional(formulario.descricao),
-      finalidade: formulario.finalidade,
-      idCategoria: opcional(formulario.idCategoria),
+      idCategoria: formulario.idCategoria,
       autorImagem: opcional(formulario.autorImagem),
       tituloOriginalImagem: opcional(formulario.tituloOriginalImagem),
       fonteImagem: opcional(formulario.fonteImagem),
@@ -796,7 +760,7 @@ export default function Ambientes() {
                       </span>
                     </div>
                     <p className="mt-1 truncate text-xs text-fg-3">
-                      {rotuloFinalidade(ambiente.finalidade)}
+                      {ambiente.categoria || "Sem categoria"}
                       {ambiente.categoria ? ` · ${ambiente.categoria}` : ""}
                       {" · "}
                       {ambiente.audios?.length || 0} {(ambiente.audios?.length || 0) === 1 ? "áudio" : "áudios"}

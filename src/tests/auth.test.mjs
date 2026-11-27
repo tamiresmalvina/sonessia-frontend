@@ -870,7 +870,7 @@ test('ambienteService.criarAmbiente envia POST para /ambientes-sonoros com token
 
   const dados = {
     nome: 'Foco Total',
-    finalidade: 'ESTUDO',
+    idCategoria: '00000000-0000-4000-8000-000000000002',
     audios: [{ idAudio: '00000000-0000-4000-8000-000000000001', volume: 80 }],
   };
 

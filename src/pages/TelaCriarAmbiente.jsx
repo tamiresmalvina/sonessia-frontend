@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth.js";
 import { audioService, ambienteService } from "../services/sons.service.js";
+import { categoriasService } from "../services/categorias.service.js";
 import { CabecalhoPublico } from "../components/CabecalhoPublico.jsx";
 import { PainelReproducao } from "../components/PainelReproducao.jsx";
 import { ControleSom } from "../components/ControleSom.jsx";
@@ -14,16 +15,6 @@ const CATEGORIAS = [
   { valor: "INSTRUMENTAL", rotulo: "Instrumental" },
   { valor: "AMBIENTE", rotulo: "Ambiente" },
   { valor: "RUIDO", rotulo: "Ruídos" },
-];
-
-// Finalidades disponíveis para salvar ambiente
-const FINALIDADES = [
-  { valor: "ESTUDO", rotulo: "Estudo" },
-  { valor: "RELAXAMENTO", rotulo: "Relaxamento" },
-  { valor: "SONO", rotulo: "Sono" },
-  { valor: "MEDITACAO", rotulo: "Meditação" },
-  { valor: "CONCENTRACAO", rotulo: "Concentração" },
-  { valor: "TRABALHO", rotulo: "Trabalho" },
 ];
 
 // Opções de temporizador em minutos
@@ -97,13 +88,13 @@ function IconeAjuda() {
 /**
  * Modal para salvar ambiente sonoro.
  */
-function ModalSalvarAmbiente({ onFechar, onSalvar, salvando, erro }) {
+function ModalSalvarAmbiente({ onFechar, onSalvar, salvando, erro, categorias }) {
   const [nome, setNome] = useState("");
-  const [finalidade, setFinalidade] = useState("RELAXAMENTO");
+  const [idCategoria, setIdCategoria] = useState("");
 
   function handleSubmit(e) {
     e.preventDefault();
-    onSalvar({ nome: nome.trim(), finalidade });
+    onSalvar({ nome: nome.trim(), idCategoria });
   }
 
   return (
@@ -174,16 +165,17 @@ function ModalSalvarAmbiente({ onFechar, onSalvar, salvando, erro }) {
 
           <div>
             <label
-              htmlFor="finalidade-ambiente"
+              htmlFor="categoria-ambiente"
               className="block text-xs font-semibold mb-1.5"
               style={{ color: "var(--color-text-primary)" }}
             >
-              Finalidade
+              Categoria
             </label>
             <select
-              id="finalidade-ambiente"
-              value={finalidade}
-              onChange={(e) => setFinalidade(e.target.value)}
+              id="categoria-ambiente"
+              value={idCategoria}
+              onChange={(e) => setIdCategoria(e.target.value)}
+              required
               className="w-full px-3 py-2 text-sm rounded-lg border transition-colors focus:outline-none"
               style={{
                 backgroundColor: "var(--color-bg)",
@@ -191,9 +183,10 @@ function ModalSalvarAmbiente({ onFechar, onSalvar, salvando, erro }) {
                 borderColor: "var(--color-border)",
               }}
             >
-              {FINALIDADES.map((f) => (
-                <option key={f.valor} value={f.valor}>
-                  {f.rotulo}
+              <option value="" disabled>Selecione uma categoria</option>
+              {categorias.map((categoria) => (
+                <option key={categoria.idCategoria} value={categoria.idCategoria}>
+                  {categoria.nome}
                 </option>
               ))}
             </select>
@@ -425,6 +418,7 @@ export function TelaCriarAmbiente({ tema, alternarTema }) {
   const [audios, setAudios] = useState([]);
   const [carregandoAudios, setCarregandoAudios] = useState(true);
   const [erroAudios, setErroAudios] = useState("");
+  const [categoriasAmbiente, setCategoriasAmbiente] = useState([]);
   const [categoriaAtiva, setCategoriaAtiva] = useState("TODOS");
   const [secaoAtiva, setSecaoAtiva] = useState("criar");
 
@@ -445,6 +439,14 @@ export function TelaCriarAmbiente({ tema, alternarTema }) {
 
   const reprodutor = useReprodutor();
   const { inicializarAudio, reproduzirPausar } = reprodutor;
+
+  useEffect(() => {
+    let ativo = true;
+    categoriasService.listar(token, "AMBIENTE").then((resposta) => {
+      if (ativo) setCategoriasAmbiente((resposta?.categorias ?? []).filter((item) => item.tipo === "AMBIENTE" && item.ativa));
+    }).catch(() => { if (ativo) setCategoriasAmbiente([]); });
+    return () => { ativo = false; };
+  }, [token]);
 
   // Carregar áudios da API
   useEffect(() => {
@@ -545,7 +547,7 @@ export function TelaCriarAmbiente({ tema, alternarTema }) {
   }
 
   // Salvar ambiente
-  async function handleSalvar({ nome, finalidade }) {
+  async function handleSalvar({ nome, idCategoria }) {
     if (!estaAutenticado) {
       navigate("/login");
       return;
@@ -566,7 +568,7 @@ export function TelaCriarAmbiente({ tema, alternarTema }) {
     try {
       await ambienteService.criarAmbiente(token, {
         nome,
-        finalidade,
+        idCategoria,
         audios: audiosAtivos,
       });
       setMostrarModalSalvar(false);
@@ -619,7 +621,7 @@ export function TelaCriarAmbiente({ tema, alternarTema }) {
                 style={{ color: "var(--color-text-secondary)" }}
               >
                 Explore combinações sonoras pré-configuradas para diferentes
-                finalidades.
+                categorias dinâmicas.
               </p>
             </div>
 
@@ -697,7 +699,7 @@ export function TelaCriarAmbiente({ tema, alternarTema }) {
                         color: "var(--color-accent)",
                       }}
                     >
-                      {amb.finalidade}
+                      {amb.categoria}
                     </span>
                   </div>
                 ))}
@@ -972,6 +974,7 @@ export function TelaCriarAmbiente({ tema, alternarTema }) {
           onSalvar={handleSalvar}
           salvando={salvando}
           erro={erroSalvar}
+          categorias={categoriasAmbiente}
         />
       )}
 

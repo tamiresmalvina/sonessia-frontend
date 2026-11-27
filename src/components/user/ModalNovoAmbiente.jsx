@@ -13,14 +13,6 @@ const FORMATOS_ACEITOS = ["image/jpeg", "image/png", "image/webp"];
 const LIMITE_NOME = 255;
 const LIMITE_DESCRICAO = 120;
 
-const FINALIDADES = [
-  { valor: "FOCO", rotulo: "Foco" },
-  { valor: "RELAXAMENTO", rotulo: "Relaxamento" },
-  { valor: "MEDITACAO", rotulo: "Meditação" },
-  { valor: "SONO", rotulo: "Sono" },
-  { valor: "EXERCICIO", rotulo: "Exercício" },
-  { valor: "LEITURA", rotulo: "Leitura" },
-];
 
 /* ─── Sub-componente: Slider de volume com ícone correspondente ─── */
 function SliderVolume({ idAudio, titulo, volume, icone, categoria, onChange }) {
@@ -92,7 +84,8 @@ export default function ModalNovoAmbiente({
   /* ── Form state ── */
   const [nome, setNome] = useState(() => ambienteParaEditar?.nome || "");
   const [descricao, setDescricao] = useState(() => ambienteParaEditar?.descricao || "");
-  const [finalidade, setFinalidade] = useState(() => ambienteParaEditar?.finalidade || "FOCO");
+  const [idCategoria, setIdCategoria] = useState(() => ambienteParaEditar?.idCategoria || "");
+  const [categoriasAmbiente, setCategoriasAmbiente] = useState([]);
 
   /* ── Imagem ── */
   const [arquivoImagem, setArquivoImagem] = useState(null);
@@ -123,7 +116,8 @@ export default function ModalNovoAmbiente({
     Promise.allSettled([
       audioService.listarAudios(),
       categoriasService.listar(token, "AUDIO"),
-    ]).then(([resAudios, resCategorias]) => {
+      categoriasService.listar(token, "AMBIENTE"),
+    ]).then(([resAudios, resCategorias, resCategoriasAmbiente]) => {
       if (!ativo) return;
 
       if (resAudios.status === "fulfilled") {
@@ -150,6 +144,15 @@ export default function ModalNovoAmbiente({
         setCategorias(["Todos", ...nomes]);
       } else {
         setCategorias(["Todos"]);
+      }
+
+      if (resCategoriasAmbiente.status === "fulfilled") {
+        const disponiveis = (resCategoriasAmbiente.value?.categorias ?? []).filter(
+          (categoria) => categoria.tipo === "AMBIENTE" && categoria.ativa,
+        );
+        setCategoriasAmbiente(disponiveis);
+      } else {
+        setCategoriasAmbiente([]);
       }
 
       setCarregandoAudios(false);
@@ -269,13 +272,17 @@ export default function ModalNovoAmbiente({
       setErroGeral("Adicione ao menos um áudio com volume acima de 0%.");
       return;
     }
+    if (!categoriasAmbiente.some((categoria) => categoria.idCategoria === idCategoria)) {
+      setErroGeral("Selecione uma categoria de ambiente ativa.");
+      return;
+    }
 
     setSalvando(true);
     try {
       const dados = {
         nome: nomeTrimado,
         descricao: descricao.trim() || null,
-        finalidade,
+        idCategoria,
         audios: composicao,
       };
 
@@ -402,20 +409,22 @@ export default function ModalNovoAmbiente({
               </p>
             </div>
 
-            {/* ── Finalidade ── */}
+            {/* ── Categoria do ambiente ── */}
             <div className="mb-5">
-              <label htmlFor="amb-finalidade" className="user-field-label">
-                Finalidade
+              <label htmlFor="amb-categoria" className="user-field-label">
+                Categoria
               </label>
               <select
-                id="amb-finalidade"
-                value={finalidade}
-                onChange={(e) => setFinalidade(e.target.value)}
+                id="amb-categoria"
+                value={idCategoria}
+                onChange={(e) => setIdCategoria(e.target.value)}
                 className="user-input"
+                required
               >
-                {FINALIDADES.map((f) => (
-                  <option key={f.valor} value={f.valor}>
-                    {f.rotulo}
+                <option value="" disabled>Selecione uma categoria</option>
+                {categoriasAmbiente.map((categoria) => (
+                  <option key={categoria.idCategoria} value={categoria.idCategoria}>
+                    {categoria.nome}
                   </option>
                 ))}
               </select>

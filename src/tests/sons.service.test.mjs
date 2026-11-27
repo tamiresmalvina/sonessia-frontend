@@ -184,7 +184,7 @@ test("ambienteService envia o CRUD administrativo com autenticação", async () 
     await ambienteService.listarAmbientesPreConfigurados("jwt-admin");
     await ambienteService.criarAmbientePreConfigurado("jwt-admin", {
       nome: "Foco",
-      finalidade: "CONCENTRACAO",
+      idCategoria: "00000000-0000-4000-8000-000000000002",
       audios: [{ idAudio: "audio-1", volume: 60 }],
     });
     await ambienteService.atualizarAmbientePreConfigurado(

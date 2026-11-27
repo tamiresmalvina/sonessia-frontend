@@ -381,7 +381,7 @@ export default function Home() {
             categorias={categoriasAmbientesVisiveis}
             selecionada={filtroAmbientes}
             onSelecionar={setFiltroAmbientes}
-            rotulo="Filtrar ambientes por finalidade"
+            rotulo="Filtrar ambientes por categoria"
           />
           {carregandoCategorias && (
             <p className="mt-3 text-center text-xs text-fg-3" role="status">

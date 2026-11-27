@@ -126,7 +126,7 @@ function ModalSonsUtilizados({ aberto, aoFechar, ambiente }) {
               Sons utilizados
             </h2>
             <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.16em] text-accent">
-              {ambiente.nome} · {ambiente.categoria || ambiente.finalidade}
+              {ambiente.nome} · {ambiente.categoria}
             </p>
           </div>
 
@@ -464,9 +464,9 @@ export default function TelaPlayer() {
               {ambiente.nome}
             </h1>
 
-            {/* Categoria / Finalidade */}
+            {/* Categoria */}
             <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.2em] text-accent">
-              {ambiente.categoria || ambiente.finalidade}
+              {ambiente.categoria}
             </p>
 
             {/* Sons Utilizados no Ambiente */}
@@ -619,7 +619,7 @@ export default function TelaPlayer() {
                   {ambiente.nome}
                 </h2>
                 <p className="mt-0.5 truncate font-mono text-[10px] uppercase tracking-[0.16em] text-accent">
-                  {ambiente.categoria || ambiente.finalidade} · {audios.length}{" "}
+                  {ambiente.categoria} · {audios.length}{" "}
                   {audios.length === 1 ? "SOM" : "SONS"}
                 </p>
                 <button

@@ -399,7 +399,7 @@ export default function UserHome() {
     description: ambiente.descricao,
     sounds: (ambiente.audios ?? []).map((audio) => audio.titulo || audio.audio?.titulo).filter(Boolean),
     image: ambiente.imagem,
-    category: ambiente.categoria || ambiente.finalidade,
+    category: ambiente.categoria,
     ambiente,
   }));
   const continueListening = recentEnvironments[0]

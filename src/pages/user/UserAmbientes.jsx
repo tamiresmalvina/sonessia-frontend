@@ -105,9 +105,9 @@ function AmbienteCard({
           {ambiente.nome}
         </h3>
 
-        {(ambiente.categoria || ambiente.finalidade) && (
+        {ambiente.categoria && (
           <p className="mt-1 truncate font-mono text-[10px] uppercase tracking-wider text-accent">
-            {ambiente.categoria || ambiente.finalidade}
+            {ambiente.categoria}
           </p>
         )}
 

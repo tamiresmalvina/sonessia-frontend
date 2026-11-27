@@ -93,7 +93,7 @@ export default function ContinuarOuvindoCard({ ambiente }) {
           </h2>
 
           <p className="mt-2 text-xs sm:text-sm text-fg-3 line-clamp-1">
-            {nomesSons || ambiente.categoria || ambiente.finalidade || "Composição personalizada"}
+            {nomesSons || ambiente.categoria || "Composição personalizada"}
           </p>
 
           <div className="mt-6 flex items-center gap-4">

@@ -62,7 +62,7 @@ export default function AmbienteCard({ ambiente, onReproduzir }) {
       </h2>
 
       <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-accent">
-        {ambiente.categoria || ambiente.finalidade}
+        {ambiente.categoria}
       </p>
 
       <p className="mt-2 text-[13px] text-fg-3">

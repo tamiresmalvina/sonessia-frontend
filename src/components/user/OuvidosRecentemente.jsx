@@ -135,9 +135,9 @@ export default function OuvidosRecentemente({ ambientes = [] }) {
                     {ambiente.nome}
                   </h3>
 
-                  {(ambiente.descricao || ambiente.categoria || ambiente.finalidade) && (
+                  {(ambiente.descricao || ambiente.categoria) && (
                     <p className="mt-1 truncate font-mono text-[10px] uppercase tracking-wider text-accent">
-                      {ambiente.categoria || ambiente.finalidade || ambiente.descricao}
+                      {ambiente.categoria || ambiente.descricao}
                     </p>
                   )}
 
