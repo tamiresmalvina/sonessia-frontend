@@ -7,7 +7,6 @@ import {
   User,
   Mail,
   Key,
-  Bell,
   Trash2,
   LogOut,
   Moon,
@@ -124,17 +123,9 @@ const GRUPO_PERFIL = [
   },
   {
     nome: "Senha",
-    rota: "#senha",
+    rota: "/comum/senha",
     icone: Key,
-    ativo: false,
-    emBreve: true,
-  },
-  {
-    nome: "Notificações",
-    rota: "#notificacoes",
-    icone: Bell,
-    ativo: false,
-    emBreve: true,
+    ativo: true,
   },
   {
     nome: "Excluir conta",
@@ -303,6 +294,25 @@ export default function UserSidebar({ menuAberto, onFecharMenu }) {
             >
               {GRUPO_PERFIL.map((item) => {
                 const Icone = item.icone;
+
+                if (item.nome === "Senha") {
+                  const ativa = location.pathname === item.rota;
+                  return (
+                    <NavLink
+                      key={item.nome}
+                      to={item.rota}
+                      onClick={onFecharMenu}
+                      className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors ${
+                        ativa
+                          ? "bg-[#F4F1FA] text-[#7656A8] dark:bg-[#252447] dark:text-[#9A72D8]"
+                          : "text-fg-2 hover:bg-surface-hover hover:text-fg"
+                      }`}
+                    >
+                      <Icone size={18} strokeWidth={1.75} className={`shrink-0 ${ativa ? "text-accent" : "text-icon-muted"}`} />
+                      <span>{item.nome}</span>
+                    </NavLink>
+                  );
+                }
 
                 return (
                   <div
