@@ -343,7 +343,7 @@ export default function Login() {
       </main>
 
       {/* Painel visual */}
-      <PainelVisualSonoro className="hidden min-h-screen md:flex md:w-1/2" />
+      <PainelVisualSonoro variante="login" className="hidden min-h-screen md:flex md:w-1/2" />
     </div>
   );
 }

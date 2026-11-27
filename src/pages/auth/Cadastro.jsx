@@ -501,7 +501,12 @@ export default function Cadastro() {
       </main>
 
       {/* LADO DIREITO: Mesmo painel visual sonoro da tela de login */}
-      <PainelVisualSonoro className="hidden min-h-screen md:flex md:w-1/2" />
+      <PainelVisualSonoro
+        variante="login"
+        titulo="Crie seu refúgio sonoro sob medida."
+        descricao="Cadastre-se para explorar experiências sonoras que acompanham você em cada momento da sua rotina."
+        className="hidden min-h-screen md:flex md:w-1/2"
+      />
     </div>
   );
 }
