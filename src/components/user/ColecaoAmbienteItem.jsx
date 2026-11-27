@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { GripVertical, Play, Trash2 } from "lucide-react";
+import { GripVertical, Play } from "lucide-react";
+import MenuAcoesCard from "./MenuAcoesCard";
 
 /**
  * Item de ambiente dentro de uma coleção.
@@ -11,6 +12,13 @@ export default function ColecaoAmbienteItem({
   onReordenar,
   onRemover,
   onReproduzir,
+  onArrastarInicio,
+  onSoltar,
+  onArrastarFim,
+  aoMoverParaCima,
+  aoMoverParaBaixo,
+  podeMoverParaCima,
+  podeMoverParaBaixo,
 }) {
   function lidarComTeclado(evento) {
     if (evento.key === "ArrowUp") {
@@ -25,13 +33,26 @@ export default function ColecaoAmbienteItem({
   }
 
   return (
-    <li className="relative flex items-center gap-3 bg-bg py-3 sm:gap-4">
+    <li
+      className="relative flex items-center gap-3 bg-bg py-3 sm:gap-4"
+      onDragOver={(evento) => evento.preventDefault()}
+      onDrop={(evento) => {
+        evento.preventDefault();
+        onSoltar?.(posicao - 1);
+      }}
+    >
       {/* Alça de ordenação */}
       <button
         type="button"
         aria-label={`Reordenar ${ambiente.nome}. Posição ${posicao} de ${totalAmbientes}. Use as setas para cima e para baixo.`}
         title="Use as setas do teclado para reordenar"
         onKeyDown={lidarComTeclado}
+        draggable
+        onDragStart={(evento) => {
+          evento.dataTransfer.effectAllowed = "move";
+          onArrastarInicio?.(posicao - 1);
+        }}
+        onDragEnd={onArrastarFim}
         className="grid size-10 shrink-0 place-items-center rounded-md text-icon-muted transition-colors hover:bg-surface-hover hover:text-icon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
       >
         <GripVertical size={18} strokeWidth={1.6} />
@@ -86,15 +107,15 @@ export default function ColecaoAmbienteItem({
       </button>
 
       {/* Remover da coleção */}
-      <button
-        type="button"
-        onClick={onRemover}
-        aria-label={`Remover ${ambiente.nome} da coleção`}
-        title="Remover da coleção"
-        className="grid size-10 shrink-0 place-items-center rounded-full text-icon-2 transition-colors hover:bg-surface-hover hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-      >
-        <Trash2 size={17} strokeWidth={1.6} />
-      </button>
+      <MenuAcoesCard
+        nome={ambiente.nome}
+        compacto
+        onMoverParaCima={aoMoverParaCima}
+        onMoverParaBaixo={aoMoverParaBaixo}
+        onRemoverDaColecao={onRemover}
+        desabilitarMoverParaCima={!podeMoverParaCima}
+        desabilitarMoverParaBaixo={!podeMoverParaBaixo}
+      />
     </li>
   );
 }

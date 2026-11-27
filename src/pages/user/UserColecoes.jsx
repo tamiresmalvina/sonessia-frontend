@@ -2,22 +2,26 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertCircle,
-  Ellipsis,
   FolderOpen,
   Plus,
   RefreshCw,
+  Save,
   Search,
   X,
 } from "lucide-react";
 
 import { useAuth } from "../../contexts/useAuth.js";
 import { colecoesService } from "../../services/colecoes.service.js";
+import { ambienteService } from "../../services/sons.service.js";
+import MenuAcoesCard from "../../components/user/MenuAcoesCard.jsx";
+import ModalConfirmarExclusao from "../../components/user/ModalConfirmarExclusao.jsx";
+import ModalColecaoForm from "../../components/user/ModalColecaoForm.jsx";
 
 /* =========================================================
    CARD DE COLEÇÃO
    ========================================================= */
 
-function ColecaoCard({ colecao }) {
+function ColecaoCard({ colecao, onEditar, onExcluir }) {
   const id = colecao.idColecao || colecao.id;
   const nome = colecao.nome || colecao.name || "Sem título";
   const descricao = colecao.descricao || colecao.description;
@@ -31,6 +35,7 @@ function ColecaoCard({ colecao }) {
   return (
     <li
       className="
+        colecao-card
         group relative
         rounded-xl border border-line-subtle
         bg-surface
@@ -60,9 +65,9 @@ function ColecaoCard({ colecao }) {
             bg-bg-2
           "
         >
-          {colecao.image || colecao.imagem ? (
+          {colecao.image || colecao.imagem || colecao.ambientes?.[0]?.imagem ? (
             <img
-              src={colecao.image || colecao.imagem}
+              src={colecao.image || colecao.imagem || colecao.ambientes?.[0]?.imagem}
               alt=""
               loading="lazy"
               className="size-full object-cover"
@@ -112,26 +117,7 @@ function ColecaoCard({ colecao }) {
         </div>
       </Link>
 
-      {/* Mais ações (funcionalidade posterior) */}
-      <button
-        type="button"
-        disabled
-        aria-label={`Mais ações para ${nome}`}
-        title="Ações disponíveis posteriormente"
-        className="
-          absolute right-1.5 top-1.5 z-10
-          grid size-10 place-items-center
-          rounded-full
-          text-icon-2
-          transition-colors duration-200
-          hover:bg-surface-hover hover:text-fg
-          outline-none focus-visible:ring-2
-          focus-visible:ring-focus
-          disabled:cursor-default
-        "
-      >
-        <Ellipsis size={18} strokeWidth={1.6} />
-      </button>
+      <MenuAcoesCard nome={nome} tipo="coleção" onEditar={onEditar} onExcluir={onExcluir} />
     </li>
   );
 }
@@ -187,252 +173,6 @@ function EstadoVazio({ pesquisando, onCriarColecao }) {
 }
 
 /* =========================================================
-   MODAL DE NOVA COLEÇÃO
-   ========================================================= */
-
-function ModalNovaColecao({ onFechar, onCriar, salvando, erroApi }) {
-  const [nome, setNome] = useState("");
-  const [descricao, setDescricao] = useState("");
-  const [erro, setErro] = useState("");
-
-  const erroExibicao = erro || erroApi;
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-    if (salvando) return;
-
-    const nomeNormalizado = nome.trim();
-
-    if (!nomeNormalizado) {
-      setErro("Informe um nome para a coleção.");
-      return;
-    }
-
-    if (nomeNormalizado.length > 255) {
-      setErro("O nome deve ter no máximo 255 caracteres.");
-      return;
-    }
-
-    const descricaoNormalizada = descricao.trim();
-    if (descricaoNormalizada.length > 1000) {
-      setErro("A descrição deve ter no máximo 1000 caracteres.");
-      return;
-    }
-
-    await onCriar({
-      nome: nomeNormalizado,
-      descricao: descricaoNormalizada || null,
-    });
-  }
-
-  return (
-    <div
-      className="
-        fixed inset-0 z-50
-        flex items-end justify-center
-        bg-black/45 p-0
-        backdrop-blur-[2px]
-        sm:items-center sm:p-4
-      "
-      onMouseDown={(event) => {
-        if (!salvando && event.target === event.currentTarget) {
-          onFechar();
-        }
-      }}
-    >
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="nova-colecao-titulo"
-        aria-describedby="nova-colecao-descricao"
-        className="
-          relative flex max-h-[92dvh] w-full
-          flex-col rounded-t-2xl
-          border border-line bg-surface
-          shadow-2xl
-          sm:max-w-[520px] sm:rounded-2xl
-        "
-      >
-        {/* Cabeçalho */}
-        <div
-          className="
-            flex items-start justify-between gap-4
-            px-6 pb-4 pt-6
-          "
-        >
-          <div className="min-w-0">
-            <h2
-              id="nova-colecao-titulo"
-              className="
-                text-[22px] font-light
-                leading-tight tracking-[-0.03em]
-              "
-            >
-              Nova coleção
-            </h2>
-
-            <p
-              id="nova-colecao-descricao"
-              className="mt-2 text-sm leading-relaxed text-fg-2"
-            >
-              Reúna seus ambientes em uma ordem de reprodução. Você adiciona os
-              ambientes depois de criar.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={onFechar}
-            disabled={salvando}
-            aria-label="Fechar"
-            title="Fechar"
-            className="
-              -mr-2 -mt-1 grid size-10 shrink-0
-              place-items-center rounded-full
-              text-icon-2
-              transition-colors duration-200
-              hover:bg-surface-hover hover:text-fg
-              outline-none focus-visible:ring-2
-              focus-visible:ring-focus
-              disabled:opacity-50 disabled:cursor-not-allowed
-            "
-          >
-            <X size={18} strokeWidth={1.6} />
-          </button>
-        </div>
-
-        {/* Formulário */}
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
-          <form
-            id="form-nova-colecao"
-            onSubmit={handleSubmit}
-            className="space-y-5 pt-2"
-          >
-            {/* Nome */}
-            <div>
-              <label
-                htmlFor="nome-colecao"
-                className="mb-2 block text-sm font-medium text-fg"
-              >
-                Nome
-              </label>
-
-              <input
-                id="nome-colecao"
-                type="text"
-                value={nome}
-                disabled={salvando}
-                onChange={(event) => {
-                  setNome(event.target.value);
-                  setErro("");
-                }}
-                maxLength={255}
-                spellCheck={false}
-                placeholder="Ex.: Para dormir"
-                autoFocus
-                aria-invalid={Boolean(erroExibicao)}
-                aria-describedby={erroExibicao ? "erro-nome-colecao" : undefined}
-                className="
-                  h-12 w-full rounded-lg
-                  border border-line bg-surface
-                  px-3.5 text-[15px] text-fg
-                  outline-none transition-colors duration-200
-                  placeholder:text-fg-3
-                  hover:border-line-strong
-                  focus:border-focus focus:ring-1 focus:ring-focus
-                  disabled:opacity-60 disabled:cursor-not-allowed
-                "
-              />
-
-              {erroExibicao && (
-                <p
-                  id="erro-nome-colecao"
-                  role="alert"
-                  className="mt-2 text-sm text-danger"
-                >
-                  {erroExibicao}
-                </p>
-              )}
-            </div>
-
-            {/* Descrição */}
-            <div>
-              <div className="mb-2 flex items-baseline justify-between">
-                <label
-                  htmlFor="descricao-colecao"
-                  className="text-sm font-medium text-fg"
-                >
-                  Descrição (opcional)
-                </label>
-
-                <span
-                  aria-hidden="true"
-                  className="
-                    font-mono text-[11px]
-                    tabular-nums text-fg-3
-                  "
-                >
-                  {descricao.length}/1000
-                </span>
-              </div>
-
-              <textarea
-                id="descricao-colecao"
-                rows={3}
-                maxLength={1000}
-                value={descricao}
-                disabled={salvando}
-                onChange={(event) => setDescricao(event.target.value)}
-                className="
-                  w-full resize-none rounded-lg
-                  border border-line bg-surface
-                  px-3.5 py-3 text-[15px]
-                  leading-relaxed text-fg
-                  outline-none transition-colors duration-200
-                  placeholder:text-fg-3
-                  hover:border-line-strong
-                  focus:border-focus focus:ring-1 focus:ring-focus
-                  disabled:opacity-60 disabled:cursor-not-allowed
-                "
-              />
-            </div>
-          </form>
-        </div>
-
-        {/* Ações */}
-        <div
-          className="
-            flex flex-col-reverse gap-2
-            border-t border-line-subtle
-            px-6 py-4
-            sm:flex-row sm:justify-end
-          "
-        >
-          <button
-            type="button"
-            onClick={onFechar}
-            disabled={salvando}
-            className="user-button user-button-secondary user-button-md disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            Cancelar
-          </button>
-
-          <button
-            type="submit"
-            form="form-nova-colecao"
-            disabled={salvando}
-            className="user-button user-button-primary user-button-md disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            <Plus size={16} strokeWidth={1.8} />
-            {salvando ? "Criando..." : "Criar coleção"}
-          </button>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-/* =========================================================
    TELA DE COLEÇÕES
    ========================================================= */
 
@@ -446,9 +186,17 @@ export default function UserColecoes() {
   const [pesquisa, setPesquisa] = useState("");
   const [ordenacao, setOrdenacao] = useState("recentes");
   const [modalAberto, setModalAberto] = useState(false);
+  const [colecaoEditando, setColecaoEditando] = useState(null);
+  const [abrindoEdicao, setAbrindoEdicao] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erroCriacao, setErroCriacao] = useState("");
+  const [ambientesDisponiveis, setAmbientesDisponiveis] = useState([]);
+  const [carregandoAmbientes, setCarregandoAmbientes] = useState(false);
+  const [erroAmbientes, setErroAmbientes] = useState("");
   const [feedback, setFeedback] = useState("");
+  const [colecaoParaExcluir, setColecaoParaExcluir] = useState(null);
+  const [excluindo, setExcluindo] = useState(false);
+  const [erroExclusao, setErroExclusao] = useState("");
 
   /* ---------------------------------------------------------
      CARREGAMENTO DOS DADOS REAIS DA API
@@ -492,6 +240,79 @@ export default function UserColecoes() {
     setCarregando(true);
     setErro(null);
     setVersao((v) => v + 1);
+  }
+
+  async function carregarAmbientesDisponiveis() {
+    setCarregandoAmbientes(true);
+    setErroAmbientes("");
+    setAmbientesDisponiveis([]);
+    try {
+      const resposta = await ambienteService.listarAmbientes(token);
+      setAmbientesDisponiveis(Array.isArray(resposta?.ambientes) ? resposta.ambientes : []);
+    } catch (falha) {
+      setErroAmbientes(
+        falha?.mensagem || falha?.message || "Não foi possível carregar os ambientes disponíveis.",
+      );
+    } finally {
+      setCarregandoAmbientes(false);
+    }
+  }
+
+  function abrirModalNovaColecao() {
+    setFeedback("");
+    setErroCriacao("");
+    setErroAmbientes("");
+    setColecaoEditando(null);
+    setModalAberto(true);
+    void carregarAmbientesDisponiveis();
+  }
+
+  async function abrirModalEdicao(colecaoResumo) {
+    if (abrindoEdicao) return;
+    setAbrindoEdicao(true);
+    setFeedback("");
+    setErroCriacao("");
+    setErroAmbientes("");
+    try {
+      const [respostaColecao, respostaAmbientes] = await Promise.all([
+        colecoesService.obterColecao(token, colecaoResumo.idColecao || colecaoResumo.id),
+        ambienteService.listarAmbientes(token),
+      ]);
+      const disponiveis = Array.isArray(respostaAmbientes?.ambientes)
+        ? respostaAmbientes.ambientes
+        : [];
+      const idsPermitidos = new Set(disponiveis.map((ambiente) => ambiente.idAmbienteSonoro || ambiente.id));
+      const detalhes = respostaColecao.colecao;
+      const associacoesLegadas = (detalhes.ambientes ?? []).filter(
+        (ambiente) => !idsPermitidos.has(ambiente.idAmbienteSonoro),
+      );
+      setAmbientesDisponiveis(disponiveis);
+      setColecaoEditando({ ...detalhes, associacoesLegadas });
+      setModalAberto(true);
+    } catch (falha) {
+      setFeedback(
+        falha?.mensagem || falha?.message || "Não foi possível carregar a coleção para edição.",
+      );
+    } finally {
+      setAbrindoEdicao(false);
+    }
+  }
+
+  async function handleConfirmarExclusao() {
+    if (!colecaoParaExcluir || excluindo) return;
+    setExcluindo(true);
+    setErroExclusao("");
+    try {
+      await colecoesService.excluirColecao(token, colecaoParaExcluir.idColecao || colecaoParaExcluir.id);
+      setColecoes((atuais) => atuais.filter((colecao) =>
+        (colecao.idColecao || colecao.id) !== (colecaoParaExcluir.idColecao || colecaoParaExcluir.id)));
+      setFeedback(`A coleção “${colecaoParaExcluir.nome || colecaoParaExcluir.name}” foi excluída com sucesso.`);
+      setColecaoParaExcluir(null);
+    } catch (falha) {
+      setErroExclusao(falha?.message || "Não foi possível excluir a coleção. Tente novamente.");
+    } finally {
+      setExcluindo(false);
+    }
   }
 
   /* ---------------------------------------------------------
@@ -549,33 +370,59 @@ export default function UserColecoes() {
      CRIAR COLEÇÃO COM ENDPOINT REAL
      --------------------------------------------------------- */
 
-  async function handleCriarColecao(dados) {
+  async function handleSalvarColecao(dados) {
     if (salvando) return;
     setSalvando(true);
     setErroCriacao("");
 
     try {
-      const resposta = await colecoesService.criarColecao(token, {
+      const payload = {
         nome: dados.nome,
         descricao: dados.descricao || null,
-      });
-
-      const nova = resposta?.colecao;
-      if (nova) {
-        setColecoes((atuais) => [nova, ...atuais]);
+        idsAmbientesSonoros: dados.idsAmbientesSonoros,
+      };
+      if (colecaoEditando) {
+        const resposta = await colecoesService.atualizarColecao(
+          token,
+          colecaoEditando.idColecao,
+          payload,
+        );
+        const atualizada = resposta?.colecao;
+        if (atualizada) {
+          const atualizadaComImagem = {
+            ...atualizada,
+            imagem: atualizada.ambientes?.[0]?.imagem ?? null,
+          };
+          setColecoes((atuais) => atuais.map((colecao) =>
+            (colecao.idColecao || colecao.id) === atualizadaComImagem.idColecao
+              ? atualizadaComImagem
+              : colecao,
+          ));
+        } else {
+          setVersao((v) => v + 1);
+        }
+        setFeedback(`Coleção "${dados.nome}" atualizada com sucesso.`);
       } else {
-        setVersao((v) => v + 1);
+        const resposta = await colecoesService.criarColecao(token, payload);
+        const nova = resposta?.colecao;
+        if (nova) {
+          const novaComImagem = { ...nova, imagem: nova.ambientes?.[0]?.imagem ?? null };
+          setColecoes((atuais) => [novaComImagem, ...atuais]);
+        } else {
+          setVersao((v) => v + 1);
+        }
+        setFeedback(`Coleção "${dados.nome}" criada com sucesso.`);
       }
 
       setPesquisa("");
       setOrdenacao("recentes");
       setModalAberto(false);
-      setFeedback(`Coleção "${dados.nome}" criada com sucesso.`);
+      setColecaoEditando(null);
     } catch (falha) {
       setErroCriacao(
-        falha?.mensagem ||
+          falha?.mensagem ||
           falha?.message ||
-          "Não foi possível criar a coleção. Verifique os dados e tente novamente.",
+          `Não foi possível ${colecaoEditando ? "atualizar" : "criar"} a coleção. Verifique os dados e tente novamente.`,
       );
     } finally {
       setSalvando(false);
@@ -619,11 +466,7 @@ export default function UserColecoes() {
 
         <button
           type="button"
-          onClick={() => {
-            setFeedback("");
-            setErroCriacao("");
-            setModalAberto(true);
-          }}
+          onClick={abrirModalNovaColecao}
           className="
             user-button user-button-primary
             user-button-md shrink-0
@@ -797,18 +640,16 @@ export default function UserColecoes() {
               "
             >
               {colecoesFiltradas.map((colecao) => (
-                <ColecaoCard key={colecao.idColecao || colecao.id} colecao={colecao} />
+                <ColecaoCard key={colecao.idColecao || colecao.id} colecao={colecao}
+                  onEditar={() => void abrirModalEdicao(colecao)}
+                  onExcluir={() => { setErroExclusao(""); setColecaoParaExcluir(colecao); }} />
               ))}
             </ul>
           ) : (
             <div className="mt-8">
               <EstadoVazio
                 pesquisando={Boolean(pesquisa.trim())}
-                onCriarColecao={() => {
-                  setFeedback("");
-                  setErroCriacao("");
-                  setModalAberto(true);
-                }}
+                onCriarColecao={abrirModalNovaColecao}
               />
             </div>
           )}
@@ -819,19 +660,60 @@ export default function UserColecoes() {
           MODAL DE CRIAÇÃO
       ===================================================== */}
 
+      {abrindoEdicao && (
+        <p role="status" className="mt-5 text-sm text-fg-2">
+          Carregando a coleção para edição...
+        </p>
+      )}
+
       {modalAberto && (
-        <ModalNovaColecao
+        <ModalColecaoForm
+          key={colecaoEditando?.idColecao ?? "nova-colecao"}
+          titulo={colecaoEditando ? "Editar coleção" : "Nova coleção"}
+          textoAuxiliar={colecaoEditando
+            ? "Atualize os dados e a ordem de reprodução dos ambientes."
+            : "Reúna seus ambientes em uma ordem de reprodução."}
+          aviso={colecaoEditando
+            ? colecaoEditando.associacoesLegadas?.length
+              ? `${colecaoEditando.associacoesLegadas.length} associação(ões) antiga(s) com ambientes da plataforma será(ão) preservada(s) após os ambientes permitidos. Para removê-la(s), use o menu do ambiente nos detalhes da coleção.`
+              : undefined
+            : "Adicionar ambientes agora não é obrigatório. A coleção pode começar vazia e você adiciona ambientes depois."}
+          valoresIniciais={colecaoEditando ?? undefined}
+          ambientesDisponiveis={ambientesDisponiveis}
+          idsAmbientesSelecionadosIniciais={colecaoEditando
+            ? colecaoEditando.ambientes
+              .filter((ambiente) => ambientesDisponiveis.some(
+                (disponivel) => (disponivel.idAmbienteSonoro || disponivel.id) === ambiente.idAmbienteSonoro,
+              ))
+              .map((ambiente) => ambiente.idAmbienteSonoro)
+            : []}
+          carregandoAmbientes={carregandoAmbientes}
+          erroAmbientes={erroAmbientes}
+          onTentarCarregarAmbientes={carregarAmbientesDisponiveis}
           onFechar={() => {
             if (!salvando) {
               setModalAberto(false);
               setErroCriacao("");
+              setColecaoEditando(null);
             }
           }}
-          onCriar={handleCriarColecao}
+          onSalvar={handleSalvarColecao}
           salvando={salvando}
           erroApi={erroCriacao}
+          textoBotao={colecaoEditando ? "Salvar alterações" : "Criar coleção"}
+          textoSalvando={colecaoEditando ? "Salvando..." : "Criando..."}
+          IconeAcao={colecaoEditando ? Save : Plus}
         />
       )}
+      {colecaoParaExcluir && <ModalConfirmarExclusao
+        item={{ ...colecaoParaExcluir, nome: colecaoParaExcluir.nome || colecaoParaExcluir.name }}
+        tipo="coleção"
+        descricao="será removida da sua conta. Os ambientes vinculados continuarão disponíveis. Essa ação não pode ser desfeita."
+        excluindo={excluindo}
+        erro={erroExclusao}
+        onConfirmar={handleConfirmarExclusao}
+        onCancelar={() => { if (!excluindo) setColecaoParaExcluir(null); }}
+      />}
     </main>
   );
 }

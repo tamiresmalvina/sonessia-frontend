@@ -79,6 +79,7 @@ test("colecoesService.criarColecao envia POST com token e payload correto", asyn
     const payloadEnvio = {
       nome: "Foco Total",
       descricao: "Ambientes para concentração",
+      idsAmbientesSonoros: ["ambiente-b", "ambiente-a"],
     };
     const resposta = await colecoesService.criarColecao("token_teste", payloadEnvio);
 
@@ -160,6 +161,40 @@ test("colecoesService.criarColecao aceita descricao nula", async () => {
     assert.equal(corpoRecebido.nome, "Sem Descrição");
     assert.equal(corpoRecebido.descricao, null);
     assert.equal(resposta.colecao.descricao, null);
+  } finally {
+    globalThis.fetch = respostaOriginal;
+  }
+});
+
+test("colecoesService.atualizarColecao envia campos e ordem dos ambientes no PATCH", async () => {
+  let urlChamada = "";
+  let opcoesRecebidas = {};
+  const mockFetch = async (url, opcoes) => {
+    urlChamada = url;
+    opcoesRecebidas = opcoes;
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: (h) => (h.toLowerCase() === "content-type" ? "application/json" : null) },
+      json: async () => ({ mensagem: "Coleção atualizada.", colecao: { idColecao: "c-1" } }),
+    };
+  };
+
+  const respostaOriginal = globalThis.fetch;
+  globalThis.fetch = mockFetch;
+  try {
+    const { colecoesService } = await import("../services/colecoes.service.js");
+    const dados = {
+      nome: "Nova ordem",
+      descricao: "Descrição editada",
+      idsAmbientesSonoros: ["ambiente-2", "ambiente-1"],
+    };
+    await colecoesService.atualizarColecao("token_teste", "c-1", dados);
+
+    assert.equal(urlChamada, "http://localhost:3000/colecoes/c-1");
+    assert.equal(opcoesRecebidas.method, "PATCH");
+    assert.equal(opcoesRecebidas.headers.Authorization, "Bearer token_teste");
+    assert.deepEqual(JSON.parse(opcoesRecebidas.body), dados);
   } finally {
     globalThis.fetch = respostaOriginal;
   }

@@ -4,6 +4,19 @@
    ========================================================= */
 
 @layer components {
+  /* Botão de ações minimalista usado somente nos cards de coleção. */
+  .colecao-card > div > button {
+    background-color: transparent !important;
+    color: var(--icon-2) !important;
+  }
+
+  .colecao-card > div > button:hover,
+  .colecao-card > div > button:active,
+  .colecao-card > div > button[aria-expanded="true"] {
+    background-color: var(--surface-hover) !important;
+    color: var(--text-1) !important;
+  }
+
   /* Layout */
   .user-page {
     @apply mx-auto w-full max-w-[1120px];

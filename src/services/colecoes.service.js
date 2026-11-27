@@ -43,7 +43,7 @@ export const colecoesService = {
    * Endpoint: POST /colecoes
    *
    * @param {string} tokenAcesso
-   * @param {{ nome: string, descricao?: string }} dados
+   * @param {{ nome: string, descricao?: string | null, idsAmbientesSonoros?: string[] }} dados
    * @returns {Promise<{ mensagem: string, colecao: object }>}
    */
   async criarColecao(tokenAcesso, dados) {
@@ -62,7 +62,7 @@ export const colecoesService = {
    *
    * @param {string} tokenAcesso
    * @param {string} idColecao
-   * @param {{ nome?: string, descricao?: string }} dados
+   * @param {{ nome?: string, descricao?: string | null, idsAmbientesSonoros?: string[] }} dados
    * @returns {Promise<{ mensagem: string, colecao: object }>}
    */
   async atualizarColecao(tokenAcesso, idColecao, dados) {
@@ -130,5 +130,14 @@ export const colecoesService = {
         },
       },
     );
+  },
+
+  /** Persiste a ordem completa dos ambientes de uma coleção. */
+  async reordenarAmbientes(tokenAcesso, idColecao, idsAmbientesSonoros) {
+    return requisicaoApi(`/colecoes/${encodeURIComponent(idColecao)}/ambientes/ordem`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${tokenAcesso}` },
+      body: JSON.stringify({ idsAmbientesSonoros }),
+    });
   },
 };

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Play, Plus, RotateCw, X } from "lucide-react";
 
@@ -165,6 +165,9 @@ export default function UserColecaoDetalhes() {
   const [salvandoAmbientes, setSalvandoAmbientes] = useState(false);
   const [modalErro, setModalErro] = useState(null);
   const [feedback, setFeedback] = useState(null);
+  const [erroOperacao, setErroOperacao] = useState(null);
+  const alteracaoPendente = useRef(false);
+  const [indiceArrastado, setIndiceArrastado] = useState(null);
 
   function carregarColecao() {
     setTentativa((t) => t + 1);
@@ -230,6 +233,78 @@ export default function UserColecaoDetalhes() {
    * Dados reais da coleção
    * --------------------------------------------------------------------- */
   const ambientes = colecao.ambientes ?? [];
+
+  async function salvarOrdemAmbientes(novaOrdem) {
+    if (alteracaoPendente.current) return;
+    alteracaoPendente.current = true;
+    const ordemAnterior = ambientes;
+    setEstado((anterior) => ({
+      ...anterior,
+      colecao: { ...anterior.colecao, ambientes: novaOrdem },
+    }));
+    try {
+      await colecoesService.reordenarAmbientes(
+        token,
+        idColecao,
+        novaOrdem.map((ambiente) => ambiente.idAmbienteSonoro),
+      );
+    } catch (erro) {
+      setEstado((anterior) => ({
+        ...anterior,
+        colecao: { ...anterior.colecao, ambientes: ordemAnterior },
+      }));
+      setErroOperacao(erro?.message || "Não foi possível salvar a ordem dos ambientes.");
+    } finally {
+      alteracaoPendente.current = false;
+    }
+  }
+
+  function moverAmbiente(indiceOrigem, deslocamento) {
+    const indiceDestino = indiceOrigem + deslocamento;
+    if (indiceDestino < 0 || indiceDestino >= ambientes.length) return;
+    const novaOrdem = [...ambientes];
+    [novaOrdem[indiceOrigem], novaOrdem[indiceDestino]] = [
+      novaOrdem[indiceDestino],
+      novaOrdem[indiceOrigem],
+    ];
+    void salvarOrdemAmbientes(novaOrdem);
+  }
+
+  async function removerAmbiente(idAmbienteSonoro) {
+    if (alteracaoPendente.current) return;
+    alteracaoPendente.current = true;
+    const ordemAnterior = ambientes;
+    setEstado((anterior) => ({
+      ...anterior,
+      colecao: {
+        ...anterior.colecao,
+        ambientes: anterior.colecao.ambientes.filter(
+          (ambiente) => ambiente.idAmbienteSonoro !== idAmbienteSonoro,
+        ),
+      },
+    }));
+    try {
+      await colecoesService.removerAmbiente(token, idColecao, idAmbienteSonoro);
+      setFeedback("Ambiente removido da coleção.");
+    } catch (erro) {
+      setEstado((anterior) => ({
+        ...anterior,
+        colecao: { ...anterior.colecao, ambientes: ordemAnterior },
+      }));
+      setErroOperacao(erro?.message || "Não foi possível remover o ambiente da coleção.");
+    } finally {
+      alteracaoPendente.current = false;
+    }
+  }
+
+  function soltarAmbiente(indiceDestino) {
+    if (indiceArrastado === null || indiceArrastado === indiceDestino) return;
+    const novaOrdem = [...ambientes];
+    const [ambienteMovido] = novaOrdem.splice(indiceArrastado, 1);
+    novaOrdem.splice(indiceDestino, 0, ambienteMovido);
+    setIndiceArrastado(null);
+    void salvarOrdemAmbientes(novaOrdem);
+  }
 
   /**
    * Abre o modal de adição e busca ambientes personalizados do usuário
@@ -392,13 +467,29 @@ export default function UserColecaoDetalhes() {
           </div>
         )}
 
+        {erroOperacao && (
+          <div role="alert" className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-danger/20 bg-danger-soft px-4 py-3 text-sm text-danger">
+            <span>{erroOperacao}</span>
+            <button
+              type="button"
+              onClick={() => setErroOperacao(null)}
+              className="rounded hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              aria-label="Fechar aviso de erro"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
         {/* Cabeçalho da coleção */}
         <header className="mt-5 flex flex-col gap-6 sm:flex-row sm:items-end">
-          {/* Capa — a API não fornece imagem de capa da coleção; mantém placeholder */}
           <span
-            aria-hidden="true"
             className="grid size-32 shrink-0 place-items-center overflow-hidden rounded-xl border border-line-subtle bg-bg-2"
-          />
+          >
+            {ambientes[0]?.imagem && (
+              <img src={ambientes[0].imagem} alt="" className="size-full object-cover" />
+            )}
+          </span>
 
           {/* Informações */}
           <div className="min-w-0 flex-1">
@@ -458,8 +549,7 @@ export default function UserColecaoDetalhes() {
                 <span aria-hidden="true" className="text-lg leading-none">
                   ⠿
                 </span>
-                Use as setas do teclado na alça para mudar a ordem de
-                reprodução.
+                Arraste pela alça para mudar a ordem de reprodução. Pelo teclado, use as setas na alça.
               </p>
 
               <ol className="divide-y divide-line-subtle border-y border-line-subtle">
@@ -474,11 +564,18 @@ export default function UserColecaoDetalhes() {
                     }}
                     posicao={indice + 1}
                     totalAmbientes={ambientes.length}
-                    onReordenar={() => {}}
-                    onRemover={() => {}}
+                    onReordenar={(deslocamento) => moverAmbiente(indice, deslocamento)}
+                    onRemover={() => removerAmbiente(ambiente.idAmbienteSonoro)}
                     onReproduzir={() =>
                       reproduzirAmbiente(ambiente.idAmbienteSonoro)
                     }
+                    onArrastarInicio={setIndiceArrastado}
+                    onSoltar={soltarAmbiente}
+                    onArrastarFim={() => setIndiceArrastado(null)}
+                    aoMoverParaCima={() => moverAmbiente(indice, -1)}
+                    aoMoverParaBaixo={() => moverAmbiente(indice, 1)}
+                    podeMoverParaCima={indice > 0}
+                    podeMoverParaBaixo={indice < ambientes.length - 1}
                   />
                 ))}
               </ol>

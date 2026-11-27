@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Search,
@@ -7,11 +7,8 @@ import {
   Plus,
   AlertCircle,
   RefreshCw,
-  MoreHorizontal,
   SlidersHorizontal,
   Compass,
-  Pencil,
-  Trash2,
   Check,
   X,
 } from "lucide-react";
@@ -19,6 +16,8 @@ import { useAuth } from "../../contexts/useAuth.js";
 import { usePlayer } from "../../contexts/usePlayer.js";
 import { ambienteService } from "../../services/sons.service.js";
 import ModalNovoAmbiente from "../../components/user/ModalNovoAmbiente.jsx";
+import MenuAcoesCard from "../../components/user/MenuAcoesCard.jsx";
+import ModalConfirmarExclusao from "../../components/user/ModalConfirmarExclusao.jsx";
 import { lerComandoHomeAmbientes } from "../../utils/comando-home-ambientes.js";
 
 /**
@@ -32,29 +31,6 @@ function AmbienteCard({
   onExcluir,
   estaTocando,
 }) {
-  const [menuAberto, setMenuAberto] = useState(false);
-  const menuRef = useRef(null);
-
-  useEffect(() => {
-    if (!menuAberto) return;
-    function handleClickOutside(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setMenuAberto(false);
-      }
-    }
-    function handleEscape(event) {
-      if (event.key === "Escape") {
-        setMenuAberto(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [menuAberto]);
-
   const audios = Array.isArray(ambiente.audios) ? ambiente.audios : [];
   const nomesSons = audios
     .map((item) => item.titulo || item.audio?.titulo)
@@ -96,59 +72,12 @@ function AmbienteCard({
 
         {/* Menu de Opções para ambientes criados pelo usuário */}
         {!ehPlataforma && (onEditar || onExcluir) && (
-          <div className="absolute right-2 top-2 z-20" ref={menuRef}>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setMenuAberto((prev) => !prev);
-              }}
-              aria-label={`Mais ações para ${ambiente.nome}`}
-              title={`Mais ações para ${ambiente.nome}`}
-              aria-expanded={menuAberto}
-              className="grid size-10 shrink-0 place-items-center rounded-full bg-black/35 text-white transition-colors duration-200 hover:bg-black/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-            >
-              <MoreHorizontal size={18} strokeWidth={1.6} aria-hidden="true" />
-            </button>
-
-            {menuAberto && (
-              <div
-                role="menu"
-                className="absolute top-11 right-0 z-40 min-w-[190px] rounded-2xl border border-line bg-surface p-1.5 shadow-lg"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {onEditar && (
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setMenuAberto(false);
-                      onEditar(ambiente);
-                    }}
-                    className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-normal text-fg transition-colors duration-150 hover:bg-[#F4F1FA] focus-visible:bg-[#F4F1FA] dark:hover:bg-surface-hover outline-none"
-                  >
-                    <Pencil size={16} strokeWidth={1.6} className="text-fg-2 shrink-0" />
-                    <span>Editar ambiente</span>
-                  </button>
-                )}
-
-                {onExcluir && (
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setMenuAberto(false);
-                      onExcluir(ambiente);
-                    }}
-                    className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-normal text-[#a23838] dark:text-[#f87171] transition-colors duration-150 hover:bg-[#fcf3f3] focus-visible:bg-[#fcf3f3] dark:hover:bg-[#331c1e] outline-none"
-                  >
-                    <Trash2 size={16} strokeWidth={1.6} className="shrink-0 text-[#a23838] dark:text-[#f87171]" />
-                    <span>Excluir...</span>
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+          <MenuAcoesCard
+            nome={ambiente.nome}
+            tipo="ambiente"
+            onEditar={onEditar ? () => onEditar(ambiente) : undefined}
+            onExcluir={onExcluir ? () => onExcluir(ambiente) : undefined}
+          />
         )}
 
         {/* Botão Play */}
@@ -217,90 +146,6 @@ function SecaoHeader({ titulo, contagem, descricao }) {
  * Modal de confirmação para exclusão de ambiente sonoro.
  * Reproduz com fidelidade o design visual do protótipo Figma Make.
  */
-function ModalExcluirAmbiente({
-  ambiente,
-  onConfirmar,
-  onCancelar,
-  excluindo,
-  erro,
-}) {
-  useEffect(() => {
-    function handleKeyDown(e) {
-      if (e.key === "Escape" && !excluindo) {
-        onCancelar();
-      }
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [excluindo, onCancelar]);
-
-  if (!ambiente) return null;
-
-  return (
-    <div
-      className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-[#141216]/50 animate-fade-in"
-      onClick={(e) => {
-        if (!excluindo && e.target === e.currentTarget) {
-          onCancelar();
-        }
-      }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modal-excluir-titulo"
-    >
-      <div className="relative w-full max-w-[440px] rounded-2xl border border-line-subtle bg-surface shadow-2xl overflow-hidden animate-scale-in">
-        <div className="p-6 pb-5">
-          <div className="flex items-center justify-between">
-            <h2
-              id="modal-excluir-titulo"
-              className="text-xl font-medium tracking-tight text-fg"
-            >
-              Excluir ambiente?
-            </h2>
-            <button
-              type="button"
-              onClick={onCancelar}
-              disabled={excluindo}
-              aria-label="Fechar"
-              className="grid size-8 place-items-center rounded-lg text-icon-muted transition-colors hover:bg-surface-hover hover:text-fg outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-50"
-            >
-              <X size={18} strokeWidth={1.8} />
-            </button>
-          </div>
-          <p className="mt-4 text-sm leading-relaxed text-fg-2">
-            “{ambiente.nome}” será removido da sua conta e das coleções em que
-            está. Essa ação não pode ser desfeita.
-          </p>
-          {erro && (
-            <p className="mt-3 text-xs text-danger">{erro}</p>
-          )}
-        </div>
-
-        <div className="border-t border-line-subtle" />
-
-        <div className="flex items-center justify-end gap-3 px-6 py-4 bg-surface">
-          <button
-            type="button"
-            onClick={onCancelar}
-            disabled={excluindo}
-            className="h-10 rounded-xl border border-line bg-surface px-5 text-sm font-medium text-fg transition-colors hover:bg-surface-hover outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-50"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={onConfirmar}
-            disabled={excluindo}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#a23838] px-5 text-sm font-medium text-white transition-colors hover:bg-[#8e2f2f] active:bg-[#7d2828] outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-60"
-          >
-            {excluindo ? "Excluindo…" : "Excluir ambiente"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /**
  * Tela Ambientes da área autenticada do usuário comum.
  * Exibe ambientes criados pelo próprio usuário e ambientes prontos da plataforma,
@@ -770,8 +615,10 @@ export default function UserAmbientes() {
 
     {/* Modal de confirmação de exclusão */}
     {ambienteParaExcluir && (
-      <ModalExcluirAmbiente
-        ambiente={ambienteParaExcluir}
+      <ModalConfirmarExclusao
+        item={ambienteParaExcluir}
+        tipo="ambiente"
+        descricao="ser? removido da sua conta e das cole??es em que est?. Essa a??o n?o pode ser desfeita."
         excluindo={excluindo}
         erro={erroExclusao}
         onConfirmar={handleConfirmarExclusao}
