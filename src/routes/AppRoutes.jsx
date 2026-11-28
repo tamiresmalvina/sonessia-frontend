@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useSyncExternalStore } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useSyncExternalStore } from "react";
 
 import Home from "../pages/Home";
 import TelaPlayer from "../pages/TelaPlayer";
@@ -46,9 +46,22 @@ function ProtegerEstadoSaida({ children }) {
   return children;
 }
 
+function EncaminharLoginAoExpirar() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const aoExpirar = () => navigate("/login", { replace: true });
+    window.addEventListener("sonessia:auth-expired", aoExpirar);
+    return () => window.removeEventListener("sonessia:auth-expired", aoExpirar);
+  }, [navigate]);
+
+  return null;
+}
+
 export default function AppRoutes() {
   return (
     <BrowserRouter>
+      <EncaminharLoginAoExpirar />
       <ProtegerEstadoSaida>
         <Routes>
           {/* Rotas Públicas */}

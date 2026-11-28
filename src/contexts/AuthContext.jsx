@@ -1,85 +1,32 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AuthContext } from "./AuthContextInstance.js";
 import { authService } from "../services/auth.service.js";
+import {
+  ehSessaoPersistente,
+  inscreverMudancasSessao,
+  limparAutenticacao,
+  obterTokenArmazenado,
+  obterUsuarioArmazenado,
+  salvarAutenticacao,
+} from "../services/auth-session.js";
 import { obterPrazoSaidaEmail } from "../utils/emailAlteradoSuccess.js";
 import { obterEsperaLogoutExclusao } from "../utils/exclusaoContaSuccess.js";
-
-const CHAVE_STORAGE_TOKEN = "sonessia_token";
-const CHAVE_STORAGE_USUARIO = "sonessia_usuario";
-const CHAVE_STORAGE_LEMBRAR_ME = "sonessia_lembrar_me";
-
-function obterTokenArmazenado() {
-  try {
-    return (
-      localStorage.getItem(CHAVE_STORAGE_TOKEN) ||
-      sessionStorage.getItem(CHAVE_STORAGE_TOKEN) ||
-      null
-    );
-  } catch {
-    return null;
-  }
-}
-
-function obterUsuarioArmazenado() {
-  try {
-    const salvo =
-      localStorage.getItem(CHAVE_STORAGE_USUARIO) ||
-      sessionStorage.getItem(CHAVE_STORAGE_USUARIO);
-
-    return salvo ? JSON.parse(salvo) : null;
-  } catch {
-    return null;
-  }
-}
-
-function ehSessaoPersistente() {
-  try {
-    return localStorage.getItem(CHAVE_STORAGE_LEMBRAR_ME) === "true";
-  } catch {
-    return false;
-  }
-}
-
-function salvarAutenticacao(token, usuario, lembrarMe) {
-  try {
-    if (lembrarMe) {
-      localStorage.setItem(CHAVE_STORAGE_TOKEN, token);
-      localStorage.setItem(CHAVE_STORAGE_USUARIO, JSON.stringify(usuario));
-      localStorage.setItem(CHAVE_STORAGE_LEMBRAR_ME, "true");
-
-      sessionStorage.removeItem(CHAVE_STORAGE_TOKEN);
-      sessionStorage.removeItem(CHAVE_STORAGE_USUARIO);
-    } else {
-      sessionStorage.setItem(CHAVE_STORAGE_TOKEN, token);
-      sessionStorage.setItem(CHAVE_STORAGE_USUARIO, JSON.stringify(usuario));
-
-      localStorage.removeItem(CHAVE_STORAGE_TOKEN);
-      localStorage.removeItem(CHAVE_STORAGE_USUARIO);
-      localStorage.removeItem(CHAVE_STORAGE_LEMBRAR_ME);
-    }
-  } catch {
-    // Falha silenciosa caso o navegador restrinja o armazenamento.
-  }
-}
-
-function limparAutenticacao() {
-  try {
-    localStorage.removeItem(CHAVE_STORAGE_TOKEN);
-    localStorage.removeItem(CHAVE_STORAGE_USUARIO);
-    localStorage.removeItem(CHAVE_STORAGE_LEMBRAR_ME);
-
-    sessionStorage.removeItem(CHAVE_STORAGE_TOKEN);
-    sessionStorage.removeItem(CHAVE_STORAGE_USUARIO);
-  } catch {
-    // Falha silenciosa.
-  }
-}
 
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(() => obterUsuarioArmazenado());
   const [token, setToken] = useState(() => obterTokenArmazenado());
   const [carregando, setCarregando] = useState(true);
   const usuarioRef = useRef(usuario);
+
+  useEffect(() => {
+    const cancelarInscricao = inscreverMudancasSessao((sessao) => {
+      usuarioRef.current = sessao.usuario;
+      setToken(sessao.token);
+      setUsuario(sessao.usuario);
+    });
+
+    return cancelarInscricao;
+  }, []);
 
   useEffect(() => {
     let ativo = true;
